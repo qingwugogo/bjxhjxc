@@ -1,0 +1,36 @@
+{
+  "pass": 24,
+  "fail": 0,
+  "failures": [],
+  "net": [
+    {
+      "url": "http://127.0.0.1:8765/",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8765/app.css",
+      "status": 200
+    },
+    {
+      "url": "http://127.0.0.1:8765/app.js",
+      "status": 200
+    },
+    {
+      "url": "cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js",
+      "status": 200
+    },
+    {
+      "url": "sticker-inventory.app.workbuddy.host/.cloud/database/rest/products?select=id&limit=1",
+      "status": 200
+    }
+  ],
+  "probe": {
+    "stage": "query",
+    "ok": true,
+    "rows": 0
+  },
+  "consoleErrors": [],
+  "pageErrors": [],
+  "failedReqs": [],
+  "at": "2026-10-14T08:33:24.364Z"
+}

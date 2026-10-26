@@ -1,0 +1,190 @@
+.mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(17, 24, 39, 0.45);
+  z-index: 900;
+  display: flex;
+  align-items: flex-end;
+}
+
+.dlg {
+  width: 100%;
+  max-height: 86vh;
+  background: #ffffff;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 28rpx 28rpx calc(28rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+.dlg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16rpx;
+}
+
+.dlg-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.dlg-close {
+  font-size: 44rpx;
+  line-height: 1;
+  color: #9ca3af;
+  padding: 0 8rpx;
+}
+
+.dlg-body {
+  max-height: 60vh;
+}
+
+.dlg-note {
+  background: #f7f8fb;
+  border-radius: 14rpx;
+  padding: 18rpx 20rpx;
+  color: #4b5563;
+  font-size: 24rpx;
+  line-height: 1.7;
+  margin-bottom: 20rpx;
+}
+
+.field {
+  margin-bottom: 22rpx;
+}
+
+.field-label {
+  display: block;
+  font-size: 24rpx;
+  color: #6b7280;
+  margin-bottom: 8rpx;
+}
+
+.field-input {
+  width: 100%;
+  height: 76rpx;
+  line-height: 76rpx;
+  padding: 0 20rpx;
+  background: #f7f8fb;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 14rpx;
+  font-size: 27rpx;
+  color: #111827;
+}
+
+.field-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #111827;
+}
+
+.field-picker .arrow {
+  color: #9ca3af;
+  font-size: 24rpx;
+  margin-left: 10rpx;
+}
+
+.field-textarea {
+  width: 100%;
+  min-height: 120rpx;
+  padding: 16rpx 20rpx;
+  background: #f7f8fb;
+  border: 1rpx solid #e5e7eb;
+  border-radius: 14rpx;
+  font-size: 27rpx;
+}
+
+.field-static {
+  min-height: 76rpx;
+  line-height: 76rpx;
+  padding: 0 20rpx;
+  background: #f3f4f7;
+  border-radius: 14rpx;
+  color: #4b5563;
+  font-size: 26rpx;
+}
+
+.field-tip {
+  display: block;
+  margin-top: 6rpx;
+  font-size: 21rpx;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+.dlg-error {
+  margin-top: 4rpx;
+  color: #b91c1c;
+  font-size: 24rpx;
+  line-height: 1.6;
+}
+
+.dlg-actions {
+  display: flex;
+  padding-top: 20rpx;
+}
+
+.d-btn {
+  flex: 1;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  margin: 0;
+  padding: 0;
+}
+
+.d-btn::after { border: none; }
+
+.d-ghost {
+  background: #f3f4f7;
+  color: #4b5563;
+  margin-right: 16rpx;
+}
+
+.d-danger {
+  background: #fee2e2;
+  color: #b91c1c;
+  margin-right: 16rpx;
+}
+
+.d-primary {
+  background: #4f46e5;
+  color: #ffffff;
+}
+
+.d-primary[disabled] {
+  background: #c7c9f5;
+  color: #ffffff;
+}
+
+/* ---------- combo：输入框 + 右侧「选择」链接（可选可填） ---------- */
+.field-combo {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.combo-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.combo-pick {
+  flex-shrink: 0;
+}
+
+.combo-link {
+  display: inline-block;
+  padding: 12rpx 20rpx;
+  font-size: 25rpx;
+  color: #4f46e5;
+  background: #eef2ff;
+  border-radius: 10rpx;
+}

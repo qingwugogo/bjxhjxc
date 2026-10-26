@@ -1,0 +1,9 @@
+{
+  "usingComponents": {
+    "form-dialog": "/components/form-dialog/form-dialog",
+    "sum-card": "/components/sum-card/sum-card"
+  },
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "navigationBarTitleText": "订单详情"
+}

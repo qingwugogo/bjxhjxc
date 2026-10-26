@@ -1,0 +1,7 @@
+{
+  "usingComponents": {
+    "app-bar": "/components/app-bar/app-bar"
+  },
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+}

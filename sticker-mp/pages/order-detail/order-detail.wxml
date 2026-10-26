@@ -1,0 +1,126 @@
+<view class="wrap">
+  <view class="boot" wx:if="{{loginError}}">
+    <view class="boot-title">{{loggedOut ? '已退出登录' : '没能登录成功'}}</view>
+    <view class="boot-text">{{loginError}}</view>
+    <button class="btn btn-primary" style="margin-top:28rpx" bindtap="retry">{{loggedOut ? '微信一键登录' : '重试'}}</button>
+  </view>
+
+  <view class="boot" wx:elif="{{!ready}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在加载订单…</view>
+  </view>
+
+  <view class="boot" wx:elif="{{loading}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在加载订单…</view>
+  </view>
+
+  <view class="empty" wx:elif="{{missing}}">这个订单不存在，或流水已被删除</view>
+
+  <block wx:else>
+    <view class="card">
+      <view class="detail-no">{{detail.orderNo}}</view>
+      <view class="hint">
+        客户 <text class="strong">{{detail.buyerText}}</text> ·
+        {{detail.moves}} 笔出库 · {{detail.qty}} 件
+        <text wx:if="{{detail.returnQty > 0}}">（已退 {{detail.returnQty}} 件）</text>
+        · {{detail.range}}
+      </view>
+    </view>
+
+    <view class="card">
+      <sum-card
+        card="{{detail.card}}"
+        show-action="{{true}}"
+        action-text="{{detail.card.hasOther ? '修改其他成本' : '录入其他成本'}}"
+        bind:action="openCost"
+      />
+    </view>
+
+    <view class="card">
+      <view class="card-head">
+        <view class="card-title">发货记录</view>
+        <button class="btn btn-ghost btn-sm" bindtap="openShipment">{{detail.shipment.has ? '修改' : '录入'}}</button>
+      </view>
+
+      <block wx:if="{{detail.shipment.has}}">
+        <view class="kv"><text class="kv-k">物流商</text><text class="kv-v">{{detail.shipment.carrier}}</text></view>
+        <view class="kv"><text class="kv-k">发货日期</text><text class="kv-v">{{detail.shipment.shippedText}}</text></view>
+        <view class="kv"><text class="kv-k">到仓时间</text><text class="kv-v">{{detail.shipment.arrivedText}}</text></view>
+        <view class="kv"><text class="kv-k">签收时间</text><text class="kv-v">{{detail.shipment.signedText}}</text></view>
+        <view class="kv"><text class="kv-k">国际单号</text><text class="kv-v mono">{{detail.shipment.trackingNo}}</text></view>
+      </block>
+      <view class="hint" wx:else>还没有发货记录，点右上角补录物流商与国际单号。</view>
+    </view>
+
+    <view class="card" wx:if="{{detail.lines.length}}">
+      <view class="card-title">商品明细</view>
+      <view class="tbl-wrap">
+        <view class="tbl">
+          <view class="tbl-row is-head">
+            <view class="tbl-cell">商品</view>
+            <view class="tbl-cell num">数量</view>
+            <view class="tbl-cell num">单价</view>
+            <view class="tbl-cell num">小计</view>
+            <view class="tbl-cell num">成本</view>
+          </view>
+          <view class="tbl-row" wx:for="{{detail.lines}}" wx:key="key">
+            <view class="tbl-cell">
+              {{item.name}}
+              <text class="dash" wx:if="{{item.code}}"> {{item.code}}</text>
+              <text class="badge badge-ret" wx:if="{{item.isReturn}}">退货</text>
+            </view>
+            <view class="tbl-cell num">{{item.qtyText}}</view>
+            <view class="tbl-cell num">{{item.priceText}}</view>
+            <view class="tbl-cell num">{{item.totalText}}</view>
+            <view class="tbl-cell num">{{item.costText}}</view>
+          </view>
+        </view>
+      </view>
+      <view class="hint" wx:if="{{detail.hasReturns}}">负数是退回库存的记录（已从本单金额与成本里扣掉）。</view>
+    </view>
+
+    <view class="card" wx:if="{{detail.returnLines.length}}">
+      <view class="card-title">退回库存</view>
+      <view class="hint">卖剩的商品退回库存后，本单金额、成本与利润会同步冲减。</view>
+
+      <view class="return-row" wx:for="{{detail.returnLines}}" wx:key="productId">
+        <view class="flex1">
+          <view class="return-name">{{item.name}}</view>
+          <view class="return-meta">
+            出库 {{item.outQty}} 件<text wx:if="{{item.returnQty > 0}}"> · 已退回 {{item.returnQty}} 件</text>
+          </view>
+        </view>
+        <button
+          wx:if="{{item.canReturn}}"
+          class="btn btn-ghost btn-sm"
+          data-id="{{item.productId}}"
+          bindtap="openReturn"
+        >退回 {{item.netQty}} 件</button>
+        <text wx:else class="badge badge-ret">已全部退回</text>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="hint" wx:if="{{detail.otherIns > 0}}">本单另有 {{detail.otherIns}} 笔普通入库记录，不计入订单金额与利润。</view>
+      <view class="btn-row">
+        <button class="btn btn-ghost" bindtap="openBuyer">修改客户姓名</button>
+        <button class="btn btn-ghost" bindtap="gotoMoves">在流水页查看</button>
+        <button class="btn btn-ghost" bindtap="copyOrderNo">复制订单 ID</button>
+      </view>
+      <button class="btn btn-danger" style="margin-top:16rpx" bindtap="onDeleteOrder">删除订单</button>
+    </view>
+  </block>
+</view>
+
+<form-dialog
+  show="{{dialog.show}}"
+  title="{{dialog.title}}"
+  note="{{dialog.note}}"
+  error="{{dialog.error}}"
+  fields="{{dialog.fields}}"
+  busy="{{dialog.busy}}"
+  submit-text="{{dialog.submitText}}"
+  bind:cancel="closeDialog"
+  bind:submit="onSubmit"
+/>

@@ -1,0 +1,29 @@
+.detail-no {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #111827;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+.strong { color: #111827; font-weight: 600; }
+
+.return-row {
+  display: flex;
+  align-items: center;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid #f1f2f6;
+}
+
+.return-row:last-child { border-bottom: none; }
+
+.return-name {
+  font-size: 27rpx;
+  color: #111827;
+}
+
+.return-meta {
+  margin-top: 4rpx;
+  font-size: 22rpx;
+  color: #9ca3af;
+}

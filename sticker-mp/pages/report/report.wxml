@@ -1,0 +1,128 @@
+<view class="wrap">
+  <app-bar title="统计报表" subtitle="销售额 · 毛利 · 毛利率" rate="{{rateText}}" bind:ratechange="onRateChange" />
+
+  <view class="boot" wx:if="{{loginError}}">
+    <view class="boot-title">{{loggedOut ? '已退出登录' : '没能登录成功'}}</view>
+    <view class="boot-text">{{loginError}}</view>
+    <button class="btn btn-primary" style="margin-top:28rpx" bindtap="retry">{{loggedOut ? '微信一键登录' : '重试'}}</button>
+  </view>
+
+  <view class="boot" wx:elif="{{!ready}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在登录…</view>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <view class="seg">
+        <view class="seg-item {{mode === 'day' ? 'is-active' : ''}}" data-mode="day" bindtap="setMode">按日</view>
+        <view class="seg-item {{mode === 'month' ? 'is-active' : ''}}" data-mode="month" bindtap="setMode">按月</view>
+        <view class="seg-item {{mode === 'year' ? 'is-active' : ''}}" data-mode="year" bindtap="setMode">按年</view>
+      </view>
+
+      <view class="row toolbar-row">
+        <picker
+          wx:if="{{mode !== 'year' && years.length}}"
+          mode="selector"
+          range="{{years}}"
+          range-key="label"
+          value="{{yearIndex}}"
+          bindchange="onYearChange"
+          class="flex1"
+        >
+          <view class="input picker-box">{{yearLabel}}<text class="arrow">▾</text></view>
+        </picker>
+
+        <picker
+          wx:if="{{mode === 'day'}}"
+          mode="selector"
+          range="{{months}}"
+          range-key="label"
+          value="{{month - 1}}"
+          bindchange="onMonthChange"
+          class="flex1 ml12"
+        >
+          <view class="input picker-box">{{month}} 月<text class="arrow">▾</text></view>
+        </picker>
+
+        <button class="btn btn-ghost btn-sm ml12" bindtap="refresh">刷新</button>
+      </view>
+
+      <view class="filter-count">{{rangeText}}</view>
+    </view>
+
+    <view class="card" wx:if="{{loading}}">
+      <view class="empty">加载中…</view>
+    </view>
+
+    <block wx:else>
+      <view class="card">
+        <view class="stat-grid">
+          <view class="stat-card" wx:for="{{cards}}" wx:key="label">
+            <view class="stat-label">{{item.label}}</view>
+            <view class="stat-value">{{item.value}}</view>
+            <view class="stat-note" wx:if="{{item.note}}">{{item.note}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="card-title">销售趋势</view>
+        <view class="empty" wx:if="{{chart.empty}}">该周期还没有销售记录</view>
+        <view class="chart" wx:else>
+          <view class="bar-col" wx:for="{{chart.bars}}" wx:key="key">
+            <view class="bar-track"><view class="bar" style="height:{{item.h}}%"></view></view>
+            <view class="bar-label">{{item.label}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="card" wx:if="{{rank.length}}">
+        <view class="card-title">商品销售排行</view>
+        <view class="rank-row" wx:for="{{rank}}" wx:key="key">
+          <text class="rank-no">{{item.no}}</text>
+          <view class="rank-main">
+            <view class="rank-head">
+              <text class="rank-name">{{item.name}}</text>
+              <text class="rank-val">{{item.value}}</text>
+            </view>
+            <view class="rank-bar-track"><view class="rank-bar" style="width:{{item.width}}%"></view></view>
+            <view class="rank-meta">{{item.meta}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="card-title">明细</view>
+        <view class="tbl-wrap">
+          <view class="tbl wide">
+            <view class="tbl-row is-head">
+              <view class="tbl-cell">{{periodName}}</view>
+              <view class="tbl-cell num">销售额</view>
+              <view class="tbl-cell num">件数</view>
+              <view class="tbl-cell num">笔数</view>
+              <view class="tbl-cell num">毛利</view>
+              <view class="tbl-cell num">毛利率</view>
+            </view>
+            <view class="tbl-row {{item.isEmpty ? 'is-empty' : ''}}" wx:for="{{table}}" wx:key="key">
+              <view class="tbl-cell">{{item.full}}</view>
+              <view class="tbl-cell num">{{item.sales}}</view>
+              <view class="tbl-cell num">{{item.qty}}</view>
+              <view class="tbl-cell num">{{item.orders}}</view>
+              <view class="tbl-cell num">{{item.profit}}</view>
+              <view class="tbl-cell num">{{item.margin}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="card">
+        <view class="hint">
+          统计口径：销售额 = 出库数量 × 成交单价（美元）× 汇率，折算为人民币；销售件数、笔数按出库流水累计，
+          订单退回库存的部分相应扣减；毛利按商品当前进价（人民币）估算（改过进价的历史记录会随之变化），
+          商品已删除的记录不计入毛利；毛利率 = 估算毛利 ÷ 销售额，销售额为 0 的周期显示「—」。
+        </view>
+      </view>
+    </block>
+  </block>
+</view>

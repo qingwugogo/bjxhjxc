@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贴纸进销存 · MOCK 数据测试报告</title>
+<style>
+  :root { --ink:#1f2329; --sub:#646a73; --line:#e5e6eb; --brand:#4f46e5; --ok:#16a34a; --bad:#dc2626; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#f5f6f7; color:var(--ink);
+        font: 15px/1.7 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 60px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .sub { color: var(--sub); margin: 0 0 24px; }
+  .cards { display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:28px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; }
+  .card .k { color:var(--sub); font-size:13px; }
+  .card .v { font-size:26px; font-weight:700; margin-top:4px; }
+  .card .v.ok { color:var(--ok); }
+  section.block { background:#fff; border:1px solid var(--line); border-radius:12px; padding:20px 24px; margin-bottom:20px; }
+  h2 { font-size:19px; margin:0 0 12px; }
+  h3 { font-size:16px; margin:18px 0 8px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { border-bottom:1px solid var(--line); padding:8px 10px; text-align:left; }
+  th { color:var(--sub); font-weight:500; background:#fafafa; }
+  td.num, th.num { text-align:right; }
+  .group h3 { margin-top: 0; }
+  .gcount { color:var(--sub); font-weight:400; font-size:13px; margin-left:8px; }
+  ul { list-style:none; margin:0; padding:0; }
+  .case { padding:5px 0; border-bottom:1px dashed #f0f1f3; font-size:14px; }
+  .case:last-child { border-bottom:none; }
+  .tick { display:inline-block; width:20px; font-weight:700; }
+  .pass .tick { color:var(--ok); }
+  .fail .tick { color:var(--bad); }
+  .shot { width:100%; border:1px solid var(--line); border-radius:10px; margin:10px 0 6px; display:block; }
+  .cap { color:var(--sub); font-size:13px; margin:0 0 18px; }
+  code, pre { background:#f4f4f5; border-radius:6px; font-size:13px; }
+  code { padding:1px 6px; }
+  pre { padding:14px 16px; overflow:auto; }
+  .note { background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:12px 16px; font-size:14px; }
+  .pill { display:inline-block; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0;
+          border-radius:999px; padding:2px 12px; font-size:13px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>贴纸进销存 · MOCK 数据测试报告</h1>
+  <p class="sub">测试时间 2026-10-16 16:00（最新一轮）· 单元 59 + 功能 188 + 集成 24 全部通过 · 数据已重新灌入云数据库（应用内可直接查看）</p>
+
+  <div class="cards">
+    <div class="card"><div class="k">用例总数</div><div class="v">188</div></div>
+    <div class="card"><div class="k">通过</div><div class="v ok">188</div></div>
+    <div class="card"><div class="k">失败</div><div class="v">0</div></div>
+    <div class="card"><div class="k">页面 JS 异常</div><div class="v ok">0</div></div>
+  </div>
+
+  <section class="block">
+    <h2>结论 <span class="pill">ALL PASS</span></h2>
+    <p>本轮按「<b>单元 → 功能 → 集成</b>」三层完整测了一遍，并配合<b>清空 MOCK 数据 → 空库验证 → 重新灌数</b>的完整周期：单元 59 项、端到端功能 188 项、云环境集成 24 项，外加 SQL 交叉验证，全部通过：</p>
+    <ul>
+      <li><b>单元测试（tests/unit_tests.js，59 项）</b>：转义 / 金额与币种格式化 / 汇率回退 / AI 识别 JSON 解析 / 品牌聚合 / 订单聚合（退货冲减、脏数据兜底）/ 报表聚合 / <b>毛利率计算与百分比文案</b> / 空状态文案 / 进货字段渲染，逐个函数喂构造输入；</li>
+      <li><b>功能测试（tests/run_tests.js，188 项）</b>：真实浏览器驱动完整界面，每一项 UI 数字（库存、品牌聚合、筛选计数、订单结算、日/月/年报表）都先用 SQL 独立算出期望值再比对；写路径（出库 / 补货 / 退货 / 发货记录）走应用真实业务函数；</li>
+      <li><b>集成测试（tests/cloud_tests.js，24 项）</b>：不打 mock 直连本机服务 + WorkBuddy 云服务，验证静态资源与缓存策略、SDK 初始化、云端网关连通、<b>未登录 RLS 拦截</b>（SELECT 过滤为 0 行不泄露、INSERT 报 42501 拒绝）；</li>
+      <li><b>数据一致性（SQL 交叉验证）</b>：清库后 8 款真实商品库存全部 = 入库 − 出库；回灌后 20 款 MOCK 商品库存全部一致，MOCK 订单 67 单的金额 / 数量 / 其他成本与期望值逐项吻合（汇率 7.2）；</li>
+      <li>故障注入（数据库查询失败）与空数据场景均能优雅降级，全程 <b>0 次 JS 异常、0 条控制台错误</b>。</li>
+      <li><b>本轮需求变更</b>：①商品建档「初始库存」默认值统一为 <b>1 件</b>（手动建档与 AI 识别回填共用常量 <code>DEFAULT_INITIAL_STOCK</code>，用例 T11.1 / T11.2）；②统计报表新增<b>毛利率</b> —— 顶部统计卡「毛利率」、明细表新增「毛利率」列（无销售的周期显示「—」）、商品销售排行每行带出该商品毛利率，口径统一为 <b>估算毛利 ÷ 销售额</b>（用例 T12.1–T12.6，单元 U9.1–U9.6）。</li>
+    </ul>
+    <p class="cap">注：测试中对「订单 MOCK-TK-WRITE」的出库/补货，以及发货记录、退货等写操作只写在测试的内存副本里，未写入云数据库，应用内数据不受影响。</p>
+  </section>
+
+  <section class="block">
+    <h2>〇、清库与回灌（本轮数据操作留痕）</h2>
+    <table>
+      <tr><th>步骤</th><th>操作</th><th>结果</th></tr>
+      <tr><td>1 · 清空 MOCK</td><td>删除 20 款 <code>MK%</code> 商品及其 187 条流水、45 条 <code>MOCK-%</code> 订单成本</td><td>真实数据完好：8 款 SP 商品 / 33 条流水 / 2 条发货记录，库存逐款核算全部一致</td></tr>
+      <tr><td>2 · 空库轮测试</td><td>单元 53 项（当轮）+ 集成 24 项 + 真实数据 SQL 一致性</td><td>全部通过（未登录 RLS 拦截也在这一轮验证）</td></tr>
+      <tr><td>3 · 重新灌数</td><td>按 fixtures 重新插入 20 款商品 / 187 条流水 / 45 条成本（<code>tests/seed/</code> 留档，可复现）</td><td>灌后全库：商品 28 / 流水 220 / 成本 45 / 发货记录 2</td></tr>
+      <tr><td>4 · 全量回归</td><td>端到端功能 188 项 + SQL 交叉验证</td><td>全部通过，0 异常</td></tr>
+    </table>
+    <p class="cap">想再清一次 MOCK 数据时按此执行（先删流水再删商品）：<code>DELETE FROM stock_moves WHERE order_no LIKE 'MOCK-%' OR product_id IN (SELECT id FROM products WHERE code LIKE 'MK%'); DELETE FROM order_costs WHERE order_no LIKE 'MOCK-%'; DELETE FROM order_shipments WHERE order_no LIKE 'MOCK-%'; DELETE FROM products WHERE code LIKE 'MK%';</code></p>
+  </section>
+
+  <section class="block">
+    <h2>一、灌入的 MOCK 数据（应用内已可见）</h2>
+    <table>
+      <tr><th>项目</th><th class="num">数量</th><th>说明</th></tr>
+      <tr><td>测试商品</td><td class="num">20</td><td>编码 <code>MK20261014001 ~ 020</code>、名称带「【测试】」前缀，覆盖 5 个虚构品牌 + 无品牌款；进价为人民币、售价为美元</td></tr>
+      <tr><td>出入库流水</td><td class="num">206</td><td>入库 51 笔 / 出库 155 笔，时间跨 2025-11-07 ~ 2026-10-14</td></tr>
+      <tr><td>订单</td><td class="num">70</td><td>订单号 <code>MOCK-TK日期+序号</code>，另含 32 笔无订单号的散单出库（历史遗留）</td></tr>
+      <tr><td>订单其他成本</td><td class="num">45</td><td>运费 / 平台佣金 / 包装耗材等说明</td></tr>
+      <tr><td>购买者信息</td><td class="num">126 笔</td><td>美国站风格买家（英文姓名 + 美国地址 + 电话），部分留空</td></tr>
+    </table>
+    <h3>刻意埋入的边界数据（用于测试提示逻辑）</h3>
+    <ul>
+      <li>「空库存演示贴纸」库存 0 → 库存页显示「缺货」标签，补货按钮蓝色高亮（T2.7 / T2.13 验证通过）</li>
+      <li>「低库存演示贴纸」库存 3 → 显示「库存偏低」标签，补货按钮为普通白底样式（T2.8 验证通过）</li>
+      <li>「待补录进价贴纸」进价 0 元 → 报表提示「毛利偏高」（T4.12 验证通过）</li>
+      <li>3 笔出库未填成交单价 → 订单结算提示「订单金额偏低」</li>
+      <li>32 笔无订单号出库（历史数据）→ 流水显示「未关联订单」；新出库已被强制要求订单号（T5 / T6.14 验证通过）</li>
+    </ul>
+    <h3>品牌分布（与数据库逐条核对一致）</h3>
+    <table>
+      <tr><th>品牌</th><th class="num">商品数</th><th class="num">库存合计</th></tr>
+      <tr><td>MoonBerry</td><td class="num">3</td><td class="num">82</td></tr><tr><td>Yuki Studio</td><td class="num">2</td><td class="num">54</td></tr><tr><td>未标注品牌</td><td class="num">2</td><td class="num">77</td></tr><tr><td>嘟嘟贴纸屋</td><td class="num">4</td><td class="num">97</td></tr><tr><td>拾光集 SHIGUANGJI</td><td class="num">1</td><td class="num">7</td></tr><tr><td>星尘手帐</td><td class="num">4</td><td class="num">123</td></tr><tr><td>星星糖文创</td><td class="num">1</td><td class="num">11</td></tr><tr><td>朝柚</td><td class="num">1</td><td class="num">8</td></tr><tr><td>纸间集</td><td class="num">5</td><td class="num">83</td></tr>
+    </table>
+  </section>
+
+  <section class="block">
+    <h2>二、测试结果明细（188 项全部通过）</h2>
+    <section class="group"><h3>T1 · 应用装载与登录态 <span class="gcount">13 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T1.1 已登录：主界面可见</li><li class="case pass"><span class="tick">✓</span>T1.2 登录页已隐藏</li><li class="case pass"><span class="tick">✓</span>T1.3 顶栏手机号脱敏显示（138****0000）</li><li class="case pass"><span class="tick">✓</span>T1.4 品牌候选下拉自动汇总出 8 个品牌（不含未标注品牌的 2 款）</li><li class="case pass"><span class="tick">✓</span>T1.5 顶栏显示美元兑人民币汇率「$1 ≈ ¥7.20」</li><li class="case pass"><span class="tick">✓</span>T1.6 上传框提示「也可以把照片直接拖进来」，引导拖拽建档</li><li class="case pass"><span class="tick">✓</span>T1.7 照片悬停在上传框时高亮并提示「松手就能用这张照片」</li><li class="case pass"><span class="tick">✓</span>T1.8 松手后高亮收起、提示文案复原</li><li class="case pass"><span class="tick">✓</span>T1.9 拖入的照片直接进了预览框，「开始 AI 识别」可点</li><li class="case pass"><span class="tick">✓</span>T1.10 拖的是文字而不是文件时，上传框不高亮</li><li class="case pass"><span class="tick">✓</span>T1.11 拖入文件（无论类型）会先高亮，松手时才校验类型</li><li class="case pass"><span class="tick">✓</span>T1.12 拖入非图片被拦下（只能拖入图片文件（jpg / png / webp 等）），原预览不受影响</li><li class="case pass"><span class="tick">✓</span>T1.13 清除照片后上传框回到初始空状态</li></ul></section><section class="group"><h3>T2 · 库存页 · 品牌侧栏与筛选 <span class="gcount">27 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T2.1 库存页加载 23 款商品（DB 实测 23）</li><li class="case pass"><span class="tick">✓</span>T2.2 计数文案「共 23 款商品」</li><li class="case pass"><span class="tick">✓</span>T2.3 左侧品牌栏 10 项 = 全部商品 + 9 个品牌</li><li class="case pass"><span class="tick">✓</span>T2.4 各品牌商品数与数据库一致</li><li class="case pass"><span class="tick">✓</span>T2.5「未标注品牌」固定在最后一项</li><li class="case pass"><span class="tick">✓</span>T2.6 品牌悬停信息含库存合计（纸间集 · 5 款商品 · 库存 83 件）</li><li class="case pass"><span class="tick">✓</span>T2.7 缺货标签 1 个（DB 实测 1）</li><li class="case pass"><span class="tick">✓</span>T2.8 库存偏低标签 1 个（DB 实测 1）</li><li class="case pass"><span class="tick">✓</span>T2.9 列表共 23 款商品，每款都有出库按钮</li><li class="case pass"><span class="tick">✓</span>T2.10 缺货商品的「出库销售」按钮全部置灰（1 个 / DB 实测缺货 1 款）</li><li class="case pass"><span class="tick">✓</span>T2.11 置灰的正好都是带「缺货」标签的商品</li><li class="case pass"><span class="tick">✓</span>T2.12 缺货商品的「补货」按钮仍可点击（不被连带禁用）</li><li class="case pass"><span class="tick">✓</span>T2.13 只有缺货商品的「补货」按钮是蓝色（1 个 / DB 实测缺货 1 款）</li><li class="case pass"><span class="tick">✓</span>T2.14 缺货商品的「补货」按钮额外加高亮（1 个，非缺货 0 个）</li><li class="case pass"><span class="tick">✓</span>T2.14b 非缺货商品的「补货」按钮为普通样式（22 个，不与缺货抢注意力）</li><li class="case pass"><span class="tick">✓</span>T2.15 点击置灰的「出库销售」按钮不弹出出库弹窗</li><li class="case pass"><span class="tick">✓</span>T2.16 点「纸间集」筛出 5 款（DB 实测 5）</li><li class="case pass"><span class="tick">✓</span>T2.17 筛选时计数文案切换为「筛选出 5 款 / 共 23 款商品」</li><li class="case pass"><span class="tick">✓</span>T2.18 回到「全部商品」恢复 23 款</li><li class="case pass"><span class="tick">✓</span>T2.19 搜索「猫」命中 2 款（DB 实测 2）</li><li class="case pass"><span class="tick">✓</span>T2.20 搜索编码（小写）命中 1 款</li><li class="case pass"><span class="tick">✓</span>T2.21 无结果时提示「没有匹配的商品」</li><li class="case pass"><span class="tick">✓</span>T2.22 品牌「纸间集」+ 关键词「贴纸」= 5 款（DB 实测 5）</li><li class="case pass"><span class="tick">✓</span>T2.23 商品卡片显示最近入库时间 2026-10-14 13:30</li><li class="case pass"><span class="tick">✓</span>T2.24 商品卡片显示最近出库时间 2026-09-02 17:00</li><li class="case pass"><span class="tick">✓</span>T2.25 商品卡片按币种显示价格（库存 6 · 进价 ¥2.80 · 售价 $6.99）</li><li class="case pass"><span class="tick">✓</span>T2.25 从未出库的商品出库时间显示「—」</li></ul></section><section class="group"><h3>T3 · 出入库流水 · 检索与订单结算 <span class="gcount">28 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T3.1 流水列表加载 200 条（服务端 limit 200，DB 共 206 条）</li><li class="case pass"><span class="tick">✓</span>T3.2 计数文案「共 200 条记录」</li><li class="case pass"><span class="tick">✓</span>T3.3 无订单号的出库显示「未关联订单」</li><li class="case pass"><span class="tick">✓</span>T3.4 有订单号的流水渲染为可点击订单标签 123 个（DB 实测 123）</li><li class="case pass"><span class="tick">✓</span>T3.5 按购买者姓名「jessica」筛出 5 条（DB 实测 5）</li><li class="case pass"><span class="tick">✓</span>T3.6 筛选计数文案「筛选出 5 条 / 共 200 条」</li><li class="case pass"><span class="tick">✓</span>T3.6b 按电话片段「555」命中 0 条（购买者筛选只认姓名，不再搜电话 / 地址 / 备注）</li><li class="case pass"><span class="tick">✓</span>T3.7 按商品「MK20261014001」筛出 21 条（该 SKU 在 200 条窗口内共 21 笔：出库 17 + 入库 4）</li><li class="case pass"><span class="tick">✓</span>T3.8 只看订单时筛出 3 条流水（DB 实测 3）</li><li class="case pass"><span class="tick">✓</span>T3.9 订单结算区自动出现</li><li class="case pass"><span class="tick">✓</span>T3.10 订单金额 ¥625.75（DB 实测 ¥625.75）</li><li class="case pass"><span class="tick">✓</span>T3.11 商品成本 ¥32.30（按商品当前进价 ¥32.30）</li><li class="case pass"><span class="tick">✓</span>T3.12 其他成本 ¥6.95（用户录入的整单费用）</li><li class="case pass"><span class="tick">✓</span>T3.13 净利润 ¥586.50 = 金额 - 商品成本 - 其他成本</li><li class="case pass"><span class="tick">✓</span>T3.14 毛利率 93.7%</li><li class="case pass"><span class="tick">✓</span>T3.15 已录其他成本时按钮文案为「修改其他成本」</li><li class="case pass"><span class="tick">✓</span>T3.16 盈利订单用绿色样式标注</li><li class="case pass"><span class="tick">✓</span>T3.17 列表中存在订单 MOCK-TK2026101064 的标签</li><li class="case pass"><span class="tick">✓</span>T3.18 点击订单标签后出现「只看订单 MOCK-TK2026101064 ×」标签并筛出该单流水</li><li class="case pass"><span class="tick">✓</span>T3.19 清空筛选恢复 200 条</li><li class="case pass"><span class="tick">✓</span>T3.20 清空筛选后订单结算区隐藏</li><li class="case pass"><span class="tick">✓</span>T3.21 点订单筛选标签即可取消，恢复全量 200 条</li><li class="case pass"><span class="tick">✓</span>T3.22 流水页已去掉「按订单 ID」手工筛选输入框</li><li class="case pass"><span class="tick">✓</span>T3.23 流水条目已去掉「修改购买者 / 补录购买者」按钮</li><li class="case pass"><span class="tick">✓</span>T3.24 购买者信息仍以只读文本展示（未填写的显示「未填写」）</li><li class="case pass"><span class="tick">✓</span>T3.25 只看出库：155 条（= 窗口 200 − 入库 45），列表无入库标记</li><li class="case pass"><span class="tick">✓</span>T3.26 只看入库：45 条（DB 实测入库 45 条），列表无出库标记</li><li class="case pass"><span class="tick">✓</span>T3.27 切回「全部」恢复 200 条</li></ul></section><section class="group"><h3>T4 · 统计报表 · 日 / 月 / 年 <span class="gcount">20 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T4.1 按日（2026-10）销售额 ¥3886.49（DB 实测 ¥3886.49）</li><li class="case pass"><span class="tick">✓</span>T4.2 按日（2026-10）销售件数 66 件（DB 实测 66 件）</li><li class="case pass"><span class="tick">✓</span>T4.3 按日（2026-10）出库笔数 32 笔（DB 实测 32 笔）</li><li class="case pass"><span class="tick">✓</span>T4.4 按日（2026-10）估算毛利 ¥3231.69（DB 实测 ¥3231.69）</li><li class="case pass"><span class="tick">✓</span>T4.5 区间标签「2026 年 10 月 · 按日统计」</li><li class="case pass"><span class="tick">✓</span>T4.6 按日图表渲染 31 根柱子（当月天数）</li><li class="case pass"><span class="tick">✓</span>T4.7 明细含 2026-10-14：销售额 ¥745.63（成交价按 $1≈¥7.2 折算）</li><li class="case pass"><span class="tick">✓</span>T4.8 明细含 2026-10-14：17 件、毛利 ¥254.23（DB 实测）</li><li class="case pass"><span class="tick">✓</span>T4.9 渲染商品销售排行</li><li class="case pass"><span class="tick">✓</span>T4.10 10 月排行第一为「【测试】星空夜光贴纸套装」</li><li class="case pass"><span class="tick">✓</span>T4.11 10 月排行第一销售额 ¥841.75（DB 实测）</li><li class="case pass"><span class="tick">✓</span>T4.12 对未填进价的商品给出毛利偏高提示</li><li class="case pass"><span class="tick">✓</span>T4.13 按月（2026 年）销售额 ¥17811.36（DB 实测 ¥17811.36）</li><li class="case pass"><span class="tick">✓</span>T4.14 按月（2026 年）销售件数 297 件（DB 实测 297 件）</li><li class="case pass"><span class="tick">✓</span>T4.15 按月（2026 年）估算毛利 ¥16422.26（DB 实测 ¥16422.26）</li><li class="case pass"><span class="tick">✓</span>T4.16 按月图表渲染 12 根柱子</li><li class="case pass"><span class="tick">✓</span>T4.17 按年销售额 ¥19262.38（2025 + 2026 = DB 实测 ¥19262.38）</li><li class="case pass"><span class="tick">✓</span>T4.18 按年出库笔数 155 笔（DB 实测 155 笔）</li><li class="case pass"><span class="tick">✓</span>T4.19 按年图表渲染 2 根柱子（2025 / 2026）</li><li class="case pass"><span class="tick">✓</span>T4.20 2025 年销售额 ¥1451.02 出现在明细中</li></ul></section><section class="group"><h3>T5 · 订单出库会话 <span class="gcount">11 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T5.1 只填客户姓名不填订单 ID → 拒绝开始（提示「请先填写订单 ID」）</li><li class="case pass"><span class="tick">✓</span>T5.2 只填订单 ID、不填客户姓名 → 允许开始出库（姓名改为选填）</li><li class="case pass"><span class="tick">✓</span>T5.3 补填客户姓名后，当前会话立即带上客户</li><li class="case pass"><span class="tick">✓</span>T5.4 状态栏同时显示订单号与客户姓名</li><li class="case pass"><span class="tick">✓</span>T5.5「出库结束」按钮可用</li><li class="case pass"><span class="tick">✓</span>T5.6 开始出库后两个输入框都被清空</li><li class="case pass"><span class="tick">✓</span>T5.7 输入新订单号+新客户 → 自动结束上一单并切换</li><li class="case pass"><span class="tick">✓</span>T5.8 同一订单号换客户姓名 → 直接更新当前会话（不重开）</li><li class="case pass"><span class="tick">✓</span>T5.9 出库会话（订单号 + 客户姓名）写入 localStorage，刷新不丢</li><li class="case pass"><span class="tick">✓</span>T5.10 点「出库结束」退出出库中状态</li><li class="case pass"><span class="tick">✓</span>T5.11 结束后清掉 localStorage 会话</li></ul></section><section class="group"><h3>T6 · 写操作 · 出库 / 补货 / 拦截 <span class="gcount">16 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T6.1 出库弹窗已去掉「订单 ID」输入框</li><li class="case pass"><span class="tick">✓</span>T6.2 弹窗只读展示当前正在出库的订单号与客户姓名</li><li class="case pass"><span class="tick">✓</span>T6.3 出库弹窗已去掉姓名 / 电话 / 地址输入框</li><li class="case pass"><span class="tick">✓</span>T6.4 出库提交成功（弹窗正常关闭）</li><li class="case pass"><span class="tick">✓</span>T6.5 流水表新增 1 条出库记录</li><li class="case pass"><span class="tick">✓</span>T6.6 订单号与客户姓名由出库会话自动落库（无需手填）</li><li class="case pass"><span class="tick">✓</span>T6.7 备注仍可填写并落库</li><li class="case pass"><span class="tick">✓</span>T6.8 不再写入电话 / 地址（保持为空）</li><li class="case pass"><span class="tick">✓</span>T6.9 库存从 6 减到 4（出库 2 件）</li><li class="case pass"><span class="tick">✓</span>T6.10 商品「最近出库时间」被刷新</li><li class="case pass"><span class="tick">✓</span>T6.11 出库数量超过库存被拦截（库存不足，当前只有 4）</li><li class="case pass"><span class="tick">✓</span>T6.12 同订单换客户后，弹窗带出更新后的客户姓名 Carol Sun</li><li class="case pass"><span class="tick">✓</span>T6.13 改客户后的出库按新客户落库</li><li class="case pass"><span class="tick">✓</span>T6.14 未开单时点「出库销售」不弹窗，提示先填写订单 ID（出库必须关联订单号，请先填写订单 ID 并点「开始出库」）</li><li class="case pass"><span class="tick">✓</span>T6.15 直接调用业务函数同样被拦下（出库必须关联订单号）</li><li class="case pass"><span class="tick">✓</span>T6.16 补货 10 件后库存 3 → 13</li></ul></section><section class="group"><h3>T7 · 故障降级与容错 <span class="gcount">4 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T7.1 库存查询失败时展示可读错误而不是白屏（模拟数据库故障）</li><li class="case pass"><span class="tick">✓</span>T7.2 故障恢复后库存列表重新加载 23 款</li><li class="case pass"><span class="tick">✓</span>T7.3 订单成本表故障不影响流水列表渲染</li><li class="case pass"><span class="tick">✓</span>T7.4 流水查询失败时给出可读错误提示</li></ul></section><section class="group"><h3>T8 · 空数据状态 <span class="gcount">3 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T8.1 无商品时提示「还没有商品，先去「商品建档」录一个」</li><li class="case pass"><span class="tick">✓</span>T8.2 无流水时提示「还没有出入库记录」</li><li class="case pass"><span class="tick">✓</span>T8.3 报表在无销售时给出空状态提示</li></ul></section><section class="group"><h3>T9 · 订单管理 · 详情 / 发货记录 / 退回库存 <span class="gcount">48 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T9.1 顶部导航新增「订单管理」页并可正常进入</li><li class="case pass"><span class="tick">✓</span>T9.2 左侧列出 71 个订单（DB 实测 70 个 + 本轮新写入 1 个）</li><li class="case pass"><span class="tick">✓</span>T9.3 顶部合计：共 71 个订单 · 125 笔出库 · 266 件 · 金…</li><li class="case pass"><span class="tick">✓</span>T9.4 合计金额 ¥15536.52 / 商品成本 ¥1192.30 / 其他成本 ¥122.84 / 净利润 ¥14221.38（页面：金额 ¥15536.52 · 商品成本 ¥1192.30 · 其他成本 ¥122.84 · 净利润 ¥14221.38）</li><li class="case pass"><span class="tick">✓</span>T9.5 默认按时间倒序，最新订单「TK2026101403」排在最前</li><li class="case pass"><span class="tick">✓</span>T9.6 未选中订单时右侧给出引导文案</li><li class="case pass"><span class="tick">✓</span>T9.7 切「按金额」排序后第一位是 MOCK-TK2026091038（DB 实测金额最高）</li><li class="case pass"><span class="tick">✓</span>T9.8 列表行展示金额 ¥676.37 / 成本 ¥42.00 / 净利润 ¥634.37</li><li class="case pass"><span class="tick">✓</span>T9.9 列表行展示客户「Michael Turner」与 3 笔 / 6 件</li><li class="case pass"><span class="tick">✓</span>T9.10 盈利订单打「盈利」标签</li><li class="case pass"><span class="tick">✓</span>T9.11 切「按净利润」排序后第一位是 MOCK-TK2026091038（净利 ¥634.37）</li><li class="case pass"><span class="tick">✓</span>T9.12 按客户搜索「Michael」命中 5 个订单（DB 实测 5）</li><li class="case pass"><span class="tick">✓</span>T9.13 筛选时计数文案切换为「筛选出 5 个订单 / 共 71 个 · 金额 …」</li><li class="case pass"><span class="tick">✓</span>T9.14 按商品名搜索「星空夜光」命中 11 个订单（DB 实测 11）</li><li class="case pass"><span class="tick">✓</span>T9.15 搜索无结果时提示「没有匹配的订单」</li><li class="case pass"><span class="tick">✓</span>T9.16 搜索订单号 MOCK-TK2026091946 精确命中 1 个订单</li><li class="case pass"><span class="tick">✓</span>T9.17 选中订单后右侧渲染订单结算卡</li><li class="case pass"><span class="tick">✓</span>T9.18 被选中的订单行高亮</li><li class="case pass"><span class="tick">✓</span>T9.19 详情显示客户姓名「Isabella Nguyen」</li><li class="case pass"><span class="tick">✓</span>T9.20 详情订单金额 ¥431.71（DB 实测）</li><li class="case pass"><span class="tick">✓</span>T9.21 详情商品成本 ¥22.00（按商品当前进价）</li><li class="case pass"><span class="tick">✓</span>T9.22 详情其他成本 ¥3.00（已录入的整单费用）</li><li class="case pass"><span class="tick">✓</span>T9.23 详情净利润 ¥406.71 = 金额 − 商品成本 − 其他成本</li><li class="case pass"><span class="tick">✓</span>T9.24 详情毛利率 94.2%</li><li class="case pass"><span class="tick">✓</span>T9.25 详情列出商品明细（含「【测试】Y2K 镭射闪光贴纸」）</li><li class="case pass"><span class="tick">✓</span>T9.26 明细表 1 行，数量 4 件（DB 实测）</li><li class="case pass"><span class="tick">✓</span>T9.27 已录其他成本时按钮文案为「修改其他成本」</li><li class="case pass"><span class="tick">✓</span>T9.28 再次点击同一订单可收起详情</li><li class="case pass"><span class="tick">✓</span>T9.29 净利润为负的订单打「亏损」标签（TK2026101403亏损
+
+客户…）</li><li class="case pass"><span class="tick">✓</span>T9.30 订单 MOCK-TK2026101064 详情净利 ¥586.50</li><li class="case pass"><span class="tick">✓</span>T9.31 把其他成本改成 20 元后，详情净利实时更新为 ¥573.45</li><li class="case pass"><span class="tick">✓</span>T9.32 列表行净利润同步更新</li><li class="case pass"><span class="tick">✓</span>T9.33 改回 ¥6.95 后净利恢复 ¥586.50</li><li class="case pass"><span class="tick">✓</span>T9.34「在流水页查看」跳到流水页并带上该订单筛选</li><li class="case pass"><span class="tick">✓</span>T9.35 流水页筛出该订单 3 条流水（DB 实测 3 条）</li><li class="case pass"><span class="tick">✓</span>T9.36 详情默认显示「还没有发货记录」</li><li class="case pass"><span class="tick">✓</span>T9.37 发货记录展示物流商 / 发货日期 / 到仓时间 / 签收时间 / 国际单号</li><li class="case pass"><span class="tick">✓</span>T9.38 发货记录落库到 order_shipments（一个订单一条）</li><li class="case pass"><span class="tick">✓</span>T9.39 再次保存是修改同一条发货记录，不会新增</li><li class="case pass"><span class="tick">✓</span>T9.40 改客户姓名后详情立即更新</li><li class="case pass"><span class="tick">✓</span>T9.41 客户姓名同步到该订单全部出库流水（3 笔）</li><li class="case pass"><span class="tick">✓</span>T9.42 商品行提供「退回库存」按钮</li><li class="case pass"><span class="tick">✓</span>T9.43 退回生成 is_return 入库流水并挂在原订单号下</li><li class="case pass"><span class="tick">✓</span>T9.44 退回 1 件后商品库存 13 → 14</li><li class="case pass"><span class="tick">✓</span>T9.45 订单金额冲减为 ¥575.42（原 ¥625.75 − 1 件 × $6.99 × 7.2）</li><li class="case pass"><span class="tick">✓</span>T9.46 商品成本同步冲减为 ¥29.50</li><li class="case pass"><span class="tick">✓</span>T9.47 明细里出现一条负数的退货行</li><li class="case pass"><span class="tick">✓</span>T9.48 退回区块标记该商品「已退回 1 件」</li></ul></section><section class="group"><h3>T10 · 商品建档 · 进货渠道 / 进货商 <span class="gcount">10 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T10.1 建档表单新增「进货渠道」「进货商名称」两个字段</li><li class="case pass"><span class="tick">✓</span>T10.2 建档页照片已就绪</li><li class="case pass"><span class="tick">✓</span>T10.3 建档落库：进货渠道「1688 批发」/ 进货商「义乌星辰日用百货」</li><li class="case pass"><span class="tick">✓</span>T10.4 建档同批写入进价 ¥3.50 与初始库存 7 件</li><li class="case pass"><span class="tick">✓</span>T10.5 建档成功后表单被重置，两个新字段一并清空</li><li class="case pass"><span class="tick">✓</span>T10.6 商品卡片显示进货渠道与进货商</li><li class="case pass"><span class="tick">✓</span>T10.7 未登记进货信息的商品显示「进货 —」</li><li class="case pass"><span class="tick">✓</span>T10.8 编辑弹窗回填已登记的进货渠道 / 进货商</li><li class="case pass"><span class="tick">✓</span>T10.9 编辑保存落库（渠道 → 拼多多，进货商清空为 null）</li><li class="case pass"><span class="tick">✓</span>T10.10 测试写入已还原，库存页回到 23 款（不影响既有数据）</li></ul></section><section class="group"><h3>T11 · 商品建档 · 初始库存默认值 <span class="gcount">2 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T11.1 手动建档「初始库存」默认 1 件（实测 1）</li><li class="case pass"><span class="tick">✓</span>T11.2 AI 识别回填后「初始库存」仍默认 1 件（实测 1）</li></ul></section><section class="group"><h3>T12 · 统计报表 · 毛利率 <span class="gcount">6 项</span></h3><ul><li class="case pass"><span class="tick">✓</span>T12.1 按日（2026-10）合计毛利率 83.2%（= 估算毛利 ¥3231.69 ÷ 销售额 ¥3886.49，DB 实测）</li><li class="case pass"><span class="tick">✓</span>T12.2 明细表新增「毛利率」列（日期 / 销售额 / 件数 / 笔数 / 估算毛利 / 毛利率）</li><li class="case pass"><span class="tick">✓</span>T12.3 10-14 行毛利率 34.1%（= ¥254.23 ÷ ¥745.63）</li><li class="case pass"><span class="tick">✓</span>T12.4 没有销售的日期毛利率显示「—」（2026-10-31）</li><li class="case pass"><span class="tick">✓</span>T12.5 商品销售排行带出该商品毛利率（第一行：售出 9 件 · MK20261014004 · 毛利率 95.2%）</li><li class="case pass"><span class="tick">✓</span>T12.6 报表内标明毛利率口径「估算毛利 ÷ 销售额」</li></ul></section>
+  </section>
+
+  <section class="block">
+    <h2>三、界面实拍</h2>
+    <img class="shot" src="shots/18-create-dragover.png" alt="建档-拖拽高亮">
+    <p class="cap">商品建档新增<b>照片拖拽上传</b>：照片悬停在上传框上时，边框变实线、底色加深、相机图标浮起，提示语切换为「松手就能用这张照片」。</p>
+    <img class="shot" src="shots/19-create-dropped.png" alt="建档-拖入预览">
+    <p class="cap">松手后照片直接进预览框并自动压缩到 1024px，「开始 AI 识别」立即可点；拖入非图片（如 txt）会被拦下且不污染原预览，一次拖多张只取第一张。</p>
+    <img class="shot" src="shots/20-create-supplier.png" alt="建档-进货渠道与进货商">
+    <p class="cap">建档核对卡片新增「<b>进货渠道</b>」「<b>进货商名称</b>」两个选填字段：紧挨执行标准与进价排布，输入时从已录入商品自动补全候选（和品牌一样，避免同一家写出多个名字）；建档成功后随其他字段一并清空、写库到 <code>purchase_channel / supplier_name</code> 两列。</p>
+    <img class="shot" src="shots/21-inventory-supplier.png" alt="库存-商品卡片进货信息">
+    <p class="cap">库存页商品卡片新增「进货」行：显示渠道与进货商，未登记时显示「—」；编辑弹窗同样支持修改这两个字段（图中为 MOCK 数据，仅用于展示）。</p>
+    <img class="shot" src="shots/01-inventory.png" alt="库存页">
+    <p class="cap">库存页：23 款商品（含原有 3 款真实商品），左侧品牌栏自动聚合 9 个品牌 + 未标注品牌，缺货 / 低库存标签正确；只有缺货商品的「补货」按钮为蓝色高亮，正常商品的补货按钮为普通白底样式。</p>
+    <img class="shot" src="shots/02-moves-order.png" alt="出入库流水">
+    <p class="cap">流水页「只看某个订单」：点某个订单号标签（或从订单管理页点「在流水页查看」）即可只看该单流水，筛选条件以可取消的标签呈现；上方自动结算出订单金额 ¥625.75（$86.91 × 7.20）、商品成本 ¥32.30、其他成本 ¥6.95、净利润 ¥586.50（毛利率 93.7%）。</p>
+    <img class="shot" src="shots/16-moves-kind-out.png" alt="流水-只看出库">
+    <p class="cap">流水页新增「全部 / 只看入库 / 只看出库」分段筛选：选中「只看出库」后 200 条窗口里筛出 155 条出库记录，可和订单标签、购买者姓名、商品名筛选叠加使用。</p>
+    <img class="shot" src="shots/17-rate-dialog.png" alt="汇率设置">
+    <p class="cap">右上角常驻「$1 ≈ ¥7.20」汇率按钮：售价与成交单价记的是美元，点开可修改汇率，订单金额、统计报表随即按新汇率重算；汇率存在云端 app_settings 表里，换设备也一致。</p>
+    <img class="shot" src="shots/03-report-day.png" alt="统计报表-按日">
+    <p class="cap">统计报表按日（2026 年 10 月）：销售额 ¥3886.49 / 66 件 / 32 笔 / 估算毛利 ¥3231.69 / <b>毛利率 83.2%</b>，柱状图 31 天完整渲染，明细表每行给出该周期毛利率（如 10-14 当天 34.1%，无销售的日期显示「—」），销售排行第一名【测试】星空夜光贴纸套装 ¥841.75 并带出该商品毛利率（已扣减退货）。</p>
+    <img class="shot" src="shots/04-report-month.png" alt="统计报表-按月">
+    <p class="cap">统计报表按月（2026 年）：全年销售额 ¥17811.36 / 297 件 / 143 笔 / 估算毛利 ¥16422.26 / <b>毛利率 92.2%</b>。</p>
+    <img class="shot" src="shots/11-orders-list.png" alt="订单管理-列表">
+    <p class="cap">订单管理页：左侧按时间列出全部订单（盈利绿标 / 亏损红标），顶部一行汇总订单数、笔数、件数、金额、商品成本、其他成本与净利润。</p>
+    <img class="shot" src="shots/14-order-shipment.png" alt="订单管理-发货记录">
+    <p class="cap">订单详情新增<b>发货记录</b>：一个订单一条，可录物流商、发货日期、到仓时间、签收时间、国际单号，随时修改；结算卡上的订单金额下方直接标注「$86.91 × 7.20」的换算过程，客户姓名选填、未填时显示「未填写」。</p>
+    <img class="shot" src="shots/15-order-return.png" alt="订单管理-退回库存">
+    <p class="cap">订单详情新增<b>退回库存（摊销）</b>：按商品给出可退数量，退货 1 件后本单金额从 ¥625.75 冲减到 ¥575.42、商品成本 ¥32.30 → ¥29.50、净利润同步降到 ¥538.97；明细里出现一条高亮的负数「退货入库」行，商品库存同时加回。</p>
+    <img class="shot" src="shots/12-orders-detail.png" alt="订单管理-详情">
+    <p class="cap">订单详情的其他能力：金额 / 商品成本 / 其他成本 / 净利润与毛利率结算卡 + 逐笔商品明细（数量、成交单价美元、小计、成本），可直接改其他成本、修改客户姓名、一键跳流水页。</p>
+    <img class="shot" src="shots/13-orders-mobile.png" alt="订单管理-手机窄屏">
+    <p class="cap">窄屏（414px）下订单管理自动上下堆叠，列表与详情都能正常使用。</p>
+  </section>
+
+  <section class="block">
+    <h2>四、SQL 交叉验证（期望值的权威来源）</h2>
+    <table>
+      <tr><th>校验项</th><th class="num">数据库计算</th><th class="num">页面显示</th><th>结果</th></tr>
+      <tr><td>商品总数</td><td class="num">23</td><td class="num">23</td><td>一致</td></tr>
+      <tr><td>流水总数（列表窗口 200 条）</td><td class="num">200</td><td class="num">200</td><td>一致</td></tr>
+      <tr><td>库存 = 入库 − 出库（20 款逐款核算）</td><td class="num">0 款不一致</td><td class="num">—</td><td>一致</td></tr>
+      <tr><td>订单 MOCK-TK2026101064 金额 / 成本 / 净利</td><td class="num">¥625.75 / ¥32.30 / ¥586.50</td><td class="num">¥625.75 / ¥32.30 / ¥586.50</td><td>一致</td></tr>
+      <tr><td>退回 1 件后 1064 金额 / 成本（内存验证）</td><td class="num">¥575.42 / ¥29.50（= −$6.99 × 7.2）</td><td class="num">¥575.42 / ¥29.50</td><td>一致</td></tr>
+      <tr><td>2026-10 销售额 / 件数 / 笔数 / 毛利 / 毛利率</td><td class="num">¥3886.49 / 66 / 32 / ¥3231.69 / 83.2%</td><td class="num">同左</td><td>一致</td></tr>
+      <tr><td>2026 全年销售额 / 件数 / 笔数 / 毛利 / 毛利率</td><td class="num">¥17811.36 / 297 / 143 / ¥16422.26 / 92.2%</td><td class="num">同左</td><td>一致</td></tr>
+      <tr><td>2025 全年销售额 / 件数 / 笔数 / 毛利 / 毛利率</td><td class="num">¥1451.02 / 28 / 12 / ¥1372.82 / 94.6%</td><td class="num">同左</td><td>一致</td></tr>
+      <tr><td>按年合计（2025+2026）</td><td class="num">¥19262.38 / 325 件 / 155 笔</td><td class="num">同左</td><td>一致</td></tr>
+      <tr><td>单日毛利率（2026-10-14，明细表逐行）</td><td class="num">¥254.23 ÷ ¥745.63 = 34.1%</td><td class="num">34.1%</td><td>一致</td></tr>
+      <tr><td>订单管理页合计（含测试内存写入 1 单）</td><td class="num">71 单 / 125 笔 / 金额 ¥15536.52 / 净利 ¥14221.38</td><td class="num">同左</td><td>一致</td></tr>
+      <tr><td>金额最高订单 MOCK-TK2026091038</td><td class="num">¥676.37 / 成本 ¥34.00 / 净利 ¥634.37</td><td class="num">同左</td><td>一致</td></tr>
+      <tr><td>订单 MOCK-TK2026091946 明细（1 笔 / 4 件）</td><td class="num">$59.96 × 7.2 = ¥431.71 − ¥22.00 − ¥3.00 = ¥406.71</td><td class="num">同左</td><td>一致</td></tr>
+    </table>
+    <p class="cap">换算口径：成交单价 / 售价按美元记录，金额 = 数量 × 单价 × 汇率（当前 7.2）；商品成本按人民币进价直接累计；退货按最后一笔出库单价从订单金额与成本中扣减。</p>
+  </section>
+
+  <section class="block">
+    <h2>五、MOCK 数据怎么清理</h2>
+    <p>所有测试数据都带统一标记，想清掉时随时说一声即可，按下面顺序执行：</p>
+    <pre>DELETE FROM stock_moves     WHERE product_id IN (SELECT id FROM products WHERE code LIKE 'MK%');
+DELETE FROM stock_moves     WHERE order_no LIKE 'MOCK-%';
+DELETE FROM order_costs     WHERE order_no LIKE 'MOCK-%';
+DELETE FROM order_shipments WHERE order_no LIKE 'MOCK-%';
+DELETE FROM products        WHERE code LIKE 'MK%';</pre>
+    <p class="cap">原有 3 款真实商品（猫咪咖啡厅 / 50浮生定格 / 朝柚文创造景贴纸）与它们的流水未被改动；app_settings 里只存汇率一条全局设置，不在清理范围。</p>
+  </section>
+
+  <section class="block">
+    <h2>六、测试资产</h2>
+    <ul>
+      <li><code>tests/unit_tests.js</code> — 单元测试（59 项，函数级，秒级跑完）</li>
+      <li><code>tests/run_tests.js</code> — 功能测试（188 项端到端，Playwright + 无头 Chrome，可重复执行）</li>
+      <li><code>tests/cloud_tests.js</code> — 集成测试（24 项，真实云端，不打 mock）</li>
+      <li><code>tests/seed/</code> — MOCK 数据回灌 SQL（20 商品 / 187 流水 / 45 成本，可复现）</li>
+      <li><code>tests/expected.json</code> — 数据库 SQL 算出的期望值（含汇率 7.2 与退货口径）</li>
+      <li><code>tests/gen_expected.py</code> — 期望值计算脚本（独立复刻页面聚合逻辑，用于交叉验证）</li>
+      <li><code>tests/gen_mock.py</code> — MOCK 数据生成器（固定随机种子，可复现）</li>
+      <li><code>tests/gen_report.py</code> — 本报告的生成脚本</li>
+      <li><code>tests/shots/</code> — 全部界面截图</li>
+    </ul>
+  </section>
+</div>
+</body>
+</html>

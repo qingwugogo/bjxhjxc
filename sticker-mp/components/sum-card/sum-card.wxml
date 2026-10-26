@@ -1,0 +1,34 @@
+<view class="sum-card">
+  <view class="sum-head">
+    <text class="sum-no">{{card.orderNo}}</text>
+    <text class="sum-meta">{{card.moves}} 笔 · {{card.qty}} 件 · {{card.range}}</text>
+  </view>
+
+  <view class="sum-grid">
+    <view class="sum-cell">
+      <view class="sum-label">订单金额</view>
+      <view class="sum-value">{{card.salesText}}</view>
+      <view class="sum-note">{{card.salesUsdText}} {{card.rateText}}</view>
+    </view>
+    <view class="sum-cell">
+      <view class="sum-label">商品成本</view>
+      <view class="sum-value">{{card.costText}}</view>
+    </view>
+    <view class="sum-cell">
+      <view class="sum-label">其他成本</view>
+      <view class="sum-value">{{card.otherText}}</view>
+    </view>
+    <view class="sum-cell">
+      <view class="sum-label">净利润</view>
+      <view class="sum-value {{card.netClass}}">{{card.netText}}</view>
+      <view class="sum-note" wx:if="{{card.marginText}}">{{card.marginText}}</view>
+    </view>
+  </view>
+
+  <view class="sum-note" wx:if="{{card.productText}}">{{card.productText}}</view>
+  <view class="sum-note" wx:if="{{card.noteText}}">{{card.noteText}}</view>
+
+  <view class="sum-actions" wx:if="{{showAction}}">
+    <button class="s-btn" bindtap="onAction">{{actionText}}</button>
+  </view>
+</view>

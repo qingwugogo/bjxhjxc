@@ -1,0 +1,8 @@
+{
+  "usingComponents": {
+    "app-bar": "/components/app-bar/app-bar",
+    "form-dialog": "/components/form-dialog/form-dialog"
+  },
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark"
+}

@@ -1,0 +1,67 @@
+.order-card.is-active {
+  border: 1rpx solid #a7f3d0;
+  background: #f6fffb;
+}
+
+.order-inputs {
+  margin: 8rpx 0 4rpx;
+}
+
+.order-inputs .input {
+  margin-bottom: 12rpx;
+  display: block;
+  width: 100%;
+}
+
+.chip-scroll {
+  width: 100%;
+  margin-top: 18rpx;
+}
+
+.chip-row {
+  display: inline-block;
+  white-space: nowrap;
+  padding-right: 12rpx;
+}
+
+/* ---------- 在售 / 已归档 分段切换 ---------- */
+.seg {
+  display: flex;
+  background: #f3f4f7;
+  border-radius: 14rpx;
+  padding: 6rpx;
+  margin-top: 18rpx;
+}
+
+.seg-item {
+  flex: 1;
+  text-align: center;
+  font-size: 26rpx;
+  color: #6b7280;
+  padding: 12rpx 0;
+  border-radius: 10rpx;
+}
+
+.seg-item.is-active {
+  background: #ffffff;
+  color: #111827;
+  font-weight: 600;
+  box-shadow: 0 2rpx 8rpx rgba(17, 24, 39, 0.08);
+}
+
+.seg-count {
+  font-size: 22rpx;
+  margin-left: 6rpx;
+  opacity: 0.75;
+}
+
+/* 已归档徽章：灰色，与缺货红 / 偏低橙区分开 */
+.badge-archived {
+  background: #eef0f4;
+  color: #6b7280;
+}
+
+/* 归档视图下的商品卡片整体调淡，暗示「不在售」 */
+.item.is-archived {
+  opacity: 0.72;
+}

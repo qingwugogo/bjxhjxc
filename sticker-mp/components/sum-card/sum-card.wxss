@@ -1,0 +1,79 @@
+.sum-card {
+  background: #f8f9fc;
+  border: 1rpx solid #eef0f4;
+  border-radius: 20rpx;
+  padding: 22rpx;
+  margin-top: 16rpx;
+}
+
+.sum-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.sum-no {
+  font-size: 27rpx;
+  font-weight: 600;
+  color: #111827;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+}
+
+.sum-meta {
+  font-size: 21rpx;
+  color: #9ca3af;
+}
+
+.sum-grid {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 14rpx -6rpx 0;
+}
+
+.sum-cell {
+  width: 50%;
+  padding: 0 6rpx;
+  margin-bottom: 12rpx;
+}
+
+.sum-label {
+  font-size: 21rpx;
+  color: #6b7280;
+}
+
+.sum-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+}
+
+.sum-value.is-net { color: #047857; }
+.sum-value.is-loss { color: #b91c1c; }
+
+.sum-note {
+  font-size: 20rpx;
+  color: #9ca3af;
+  line-height: 1.6;
+  margin-top: 2rpx;
+}
+
+.sum-actions {
+  margin-top: 12rpx;
+}
+
+.s-btn {
+  display: inline-block;
+  height: 56rpx;
+  line-height: 56rpx;
+  padding: 0 20rpx;
+  border-radius: 12rpx;
+  background: #ffffff;
+  border: 1rpx solid #d8dbe3;
+  color: #374151;
+  font-size: 23rpx;
+  margin: 0;
+}
+
+.s-btn::after { border: none; }

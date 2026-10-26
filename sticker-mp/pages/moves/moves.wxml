@@ -1,0 +1,89 @@
+<view class="wrap">
+  <app-bar title="出入库流水" subtitle="最近 200 条 · 可按订单结算" rate="{{rateText}}" bind:ratechange="onRateChange" />
+
+  <view class="boot" wx:if="{{loginError}}">
+    <view class="boot-title">{{loggedOut ? '已退出登录' : '没能登录成功'}}</view>
+    <view class="boot-text">{{loginError}}</view>
+    <button class="btn btn-primary" style="margin-top:28rpx" bindtap="retry">{{loggedOut ? '微信一键登录' : '重试'}}</button>
+  </view>
+
+  <view class="boot" wx:elif="{{!ready}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在登录…</view>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <view class="seg">
+        <view class="seg-item {{kind === 'all' ? 'is-active' : ''}}" data-kind="all" bindtap="setKind">全部</view>
+        <view class="seg-item {{kind === 'in' ? 'is-active' : ''}}" data-kind="in" bindtap="setKind">只看入库</view>
+        <view class="seg-item {{kind === 'out' ? 'is-active' : ''}}" data-kind="out" bindtap="setKind">只看出库</view>
+      </view>
+
+      <input class="input move-input" placeholder="按购买者姓名筛选" value="{{buyerKw}}" bindinput="onBuyerInput" />
+      <input class="input move-input" placeholder="按商品筛选：名称 / 编码" value="{{productKw}}" bindinput="onProductInput" />
+
+      <view class="row-wrap" wx:if="{{orderFilter}}">
+        <view class="chip is-active" bindtap="clearOrderFilter">
+          只看订单 {{orderFilter}} ×
+        </view>
+      </view>
+
+      <view class="btn-row">
+        <button class="btn btn-ghost btn-sm" bindtap="clearFilters">清空筛选</button>
+        <button class="btn btn-ghost btn-sm" bindtap="refresh">刷新</button>
+      </view>
+
+      <view class="filter-count" wx:if="{{countText}}">{{countText}}</view>
+    </view>
+
+    <view class="card" wx:if="{{summary.show}}">
+      <view class="card-title">订单结算</view>
+      <view class="hint">{{summary.lead}}</view>
+      <sum-card
+        wx:for="{{summary.cards}}"
+        wx:key="orderNo"
+        card="{{item}}"
+        show-action="{{true}}"
+        action-text="{{item.hasOther ? '修改其他成本' : '录入其他成本'}}"
+        bind:action="openCost"
+      />
+    </view>
+
+    <view class="card">
+      <view wx:if="{{loading}}" class="empty">加载中…</view>
+      <view wx:elif="{{list.length === 0}}" class="empty">{{emptyText}}</view>
+
+      <view class="item {{item.isReturn ? 'is-return' : ''}}" wx:for="{{list}}" wx:key="id">
+        <view class="item-main">
+          <view class="item-title">{{item.name}}<text class="badge {{item.badgeCls}}">{{item.badgeText}}</text></view>
+          <view class="item-meta">
+            数量 <text class="strong">{{item.qtyText}}</text> ·
+            单价 <text class="strong">{{item.priceText}}</text> ·
+            {{item.timeText}}
+          </view>
+          <view class="item-meta" wx:if="{{item.showOrder}}">
+            订单：
+            <text wx:if="{{item.orderNo}}" class="order-chip" data-no="{{item.orderNo}}" bindtap="clickOrderChip">{{item.orderNo}}</text>
+            <text wx:else class="dash">未关联订单</text>
+          </view>
+          <view class="item-meta">
+            购买者：{{item.buyerText}}<text wx:if="{{item.noteText}}"> · 备注 {{item.noteText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>
+
+<form-dialog
+  show="{{dialog.show}}"
+  title="{{dialog.title}}"
+  note="{{dialog.note}}"
+  error="{{dialog.error}}"
+  fields="{{dialog.fields}}"
+  busy="{{dialog.busy}}"
+  submit-text="{{dialog.submitText}}"
+  bind:cancel="closeDialog"
+  bind:submit="submitCost"
+/>

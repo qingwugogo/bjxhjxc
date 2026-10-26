@@ -1,0 +1,108 @@
+<view class="mask" wx:if="{{show}}" bindtap="onCancel">
+  <view class="dlg" catchtap="noop">
+    <view class="dlg-head">
+      <text class="dlg-title">{{title}}</text>
+      <text class="dlg-close" bindtap="onCancel">×</text>
+    </view>
+
+    <scroll-view scroll-y class="dlg-body">
+      <view class="dlg-note" wx:if="{{note}}">{{note}}</view>
+
+      <view class="field" wx:for="{{fields}}" wx:key="key">
+        <text class="field-label">{{item.label}}</text>
+
+        <input
+          wx:if="{{item.type === 'text'}}"
+          class="field-input"
+          value="{{values[item.key]}}"
+          data-key="{{item.key}}"
+          bindinput="onInput"
+          placeholder="{{item.placeholder}}"
+          maxlength="{{item.maxlength || 200}}"
+          confirm-type="done"
+        />
+
+        <input
+          wx:elif="{{item.type === 'number' || item.type === 'digit'}}"
+          class="field-input"
+          type="{{item.type}}"
+          value="{{values[item.key]}}"
+          data-key="{{item.key}}"
+          bindinput="onInput"
+          placeholder="{{item.placeholder}}"
+        />
+
+        <!-- 可输入 + 可点「选择」从预设列表挑：进货商等可选可填的字段 -->
+        <view wx:elif="{{item.type === 'combo'}}" class="field-combo">
+          <input
+            class="field-input combo-input"
+            value="{{values[item.key]}}"
+            data-key="{{item.key}}"
+            bindinput="onInput"
+            placeholder="{{item.placeholder}}"
+            maxlength="{{item.maxlength || 200}}"
+            confirm-type="done"
+          />
+          <picker
+            class="combo-pick"
+            mode="selector"
+            range="{{item.optionLabels || item.options}}"
+            data-key="{{item.key}}"
+            bindchange="onPicker"
+          >
+            <text class="combo-link">选择</text>
+          </picker>
+        </view>
+
+        <textarea
+          wx:elif="{{item.type === 'textarea'}}"
+          class="field-textarea"
+          value="{{values[item.key]}}"
+          data-key="{{item.key}}"
+          bindinput="onInput"
+          placeholder="{{item.placeholder}}"
+          maxlength="{{item.maxlength || 200}}"
+          auto-height
+        />
+
+        <picker
+          wx:elif="{{item.type === 'select'}}"
+          mode="selector"
+          range="{{item.optionLabels || item.options}}"
+          data-key="{{item.key}}"
+          bindchange="onPicker"
+        >
+          <view class="field-input field-picker">
+            {{values[item.key] || item.placeholder || '请选择'}}
+            <text class="arrow">▾</text>
+          </view>
+        </picker>
+
+        <picker
+          wx:elif="{{item.type === 'date'}}"
+          mode="date"
+          value="{{values[item.key]}}"
+          data-key="{{item.key}}"
+          bindchange="onDate"
+        >
+          <view class="field-input field-picker">
+            {{values[item.key] || item.placeholder || '选择日期'}}
+            <text class="arrow">▾</text>
+          </view>
+        </picker>
+
+        <view wx:else class="field-static">{{values[item.key] || item.placeholder || '—'}}</view>
+
+        <text class="field-tip" wx:if="{{item.tip}}">{{item.tip}}</text>
+      </view>
+    </scroll-view>
+
+    <view class="dlg-error" wx:if="{{error}}">{{error}}</view>
+
+    <view class="dlg-actions">
+      <button wx:if="{{dangerText}}" class="d-btn d-danger" bindtap="onDanger">{{dangerText}}</button>
+      <button class="d-btn d-ghost" bindtap="onCancel">{{cancelText}}</button>
+      <button class="d-btn d-primary" bindtap="onSubmit" loading="{{busy}}" disabled="{{busy}}">{{submitText}}</button>
+    </view>
+  </view>
+</view>

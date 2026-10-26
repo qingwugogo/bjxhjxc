@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贴纸进销存</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%234f46e5'/%3E%3Ccircle cx='32' cy='32' r='14' fill='white'/%3E%3Ccircle cx='32' cy='32' r='5' fill='%234f46e5'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<div id="bootView" class="boot">
+  <div class="spinner"></div>
+  <p>正在加载…</p>
+</div>
+
+<div id="loginView" class="login-wrap hidden">
+  <div class="login-card">
+    <h1>贴纸进销存</h1>
+    <p class="sub">拍照建档 · 出入库 · 库存管理</p>
+
+    <label class="field">
+      <span>手机号</span>
+      <input id="phoneInput" type="tel" inputmode="numeric" maxlength="11" placeholder="请输入 11 位手机号" autocomplete="tel">
+    </label>
+    <p id="phoneError" class="field-error"></p>
+
+    <label class="field">
+      <span>验证码</span>
+      <div class="code-row">
+        <input id="codeInput" type="text" inputmode="numeric" maxlength="6" placeholder="6 位验证码" autocomplete="one-time-code">
+        <button id="sendCodeBtn" type="button" class="ghost">获取验证码</button>
+      </div>
+    </label>
+
+    <p id="loginError" class="form-error"></p>
+    <button id="loginBtn" type="button" class="primary block">登录 / 注册</button>
+    <p class="tiny">未注册的手机号将自动创建账号</p>
+  </div>
+</div>
+
+<div id="appView" class="hidden">
+  <header class="topbar">
+    <div class="brand">贴纸进销存</div>
+    <div class="user-area">
+      <button id="rateBtn" type="button" class="ghost small rate-btn" title="美元兑人民币汇率，点击修改">$1 ≈ ¥7.20</button>
+      <span id="userPhone" class="user-phone"></span>
+      <button id="logoutBtn" type="button" class="ghost small">退出</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab is-active" data-tab="create" type="button">商品建档</button>
+    <button class="tab" data-tab="inventory" type="button">库存</button>
+    <button class="tab" data-tab="moves" type="button">出入库流水</button>
+    <button class="tab" data-tab="orders" type="button">订单管理</button>
+    <button class="tab" data-tab="report" type="button">统计报表</button>
+  </nav>
+
+  <main class="content">
+
+    <section id="panel-create" class="panel">
+      <div class="card">
+        <h2>拍照建档</h2>
+        <p class="hint">上传或拍摄商品照片，自动识别名称、品牌、产地、材质、规格、执行标准；照片可直接拖进下方框里</p>
+
+        <div id="uploadZone" class="upload-zone">
+          <input type="file" id="fileInput" accept="image/*" hidden>
+          <img id="previewImg" class="preview hidden" alt="商品预览">
+          <div id="uploadPlaceholder" class="upload-placeholder">
+            <div class="cam-icon"></div>
+            <span>点击选择或拍摄商品照片</span>
+            <span id="dropHint" class="drop-hint">也可以把照片直接拖进来</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="recognizeBtn" type="button" class="primary" disabled>开始 AI 识别</button>
+          <button id="clearPhotoBtn" type="button" class="ghost">清除照片</button>
+        </div>
+        <p id="recognizeStatus" class="status"></p>
+      </div>
+
+      <div id="reviewCard" class="card hidden">
+        <h2>核对商品信息</h2>
+        <p class="hint">AI 识别结果仅供参考，请逐项核对修改后入库。产品编码由系统自动生成、不会重复，无需填写。</p>
+
+        <div class="form-grid">
+          <label class="field"><span>产品名称</span><input id="fName" type="text"></label>
+          <label class="field"><span>品牌</span><input id="fBrand" type="text" list="brandOptions"></label>
+          <label class="field"><span>产地</span><input id="fOrigin" type="text"></label>
+          <label class="field"><span>材质</span><input id="fMaterial" type="text"></label>
+          <label class="field"><span>规格</span><input id="fSpec" type="text"></label>
+          <label class="field full"><span>执行标准</span><input id="fStandard" type="text"></label>
+          <label class="field"><span>进货渠道</span>
+            <select id="fChannel">
+              <option value="">不填</option>
+              <option>拼多多</option>
+              <option>小红书</option>
+              <option>1688</option>
+              <option>抖音</option>
+            </select>
+          </label>
+          <label class="field"><span>进货商名称</span><input id="fSupplier" type="text" list="supplierOptions" placeholder="选填，点输入框可从列表选，也可直接输入"></label>
+          <label class="field"><span>进价（人民币 ¥）</span><input id="fCost" type="number" step="0.01" min="0" placeholder="必填"></label>
+          <label class="field"><span>售价（美元 $）</span><input id="fSale" type="number" step="0.01" min="0" placeholder="必填"></label>
+          <label class="field"><span>初始库存</span><input id="fStock" type="number" step="1" min="0" value="1"></label>
+          <label class="field full"><span>备注</span><input id="fNote" type="text" placeholder="选填"></label>
+        </div>
+
+        <div class="actions">
+          <button id="saveProductBtn" type="button" class="primary">确认入库</button>
+          <button id="resetCreateBtn" type="button" class="ghost">重新建档</button>
+        </div>
+        <p id="saveStatus" class="status"></p>
+      </div>
+    </section>
+
+    <section id="panel-inventory" class="panel hidden">
+      <div class="card">
+        <div id="orderBar" class="order-bar">
+          <div class="order-bar-row">
+            <input id="orderInput" type="text" placeholder="订单 ID，例如 TK20261014001">
+            <input id="orderBuyerInput" type="text" placeholder="客户姓名" maxlength="24">
+            <button id="startOrderBtn" type="button" class="primary small">开始出库</button>
+            <button id="endOrderBtn" type="button" class="ghost small" disabled>出库结束</button>
+          </div>
+          <p id="orderStatus" class="order-status"></p>
+        </div>
+        <div class="toolbar">
+          <input id="searchInput" type="text" placeholder="搜索名称 / 编码 / 品牌">
+          <button id="archivedToggleBtn" type="button" class="ghost small" title="在售商品与已归档商品切换查看">已归档</button>
+          <button id="refreshInventoryBtn" type="button" class="ghost">刷新</button>
+        </div>
+        <div class="inventory-layout">
+          <aside id="brandSidebar" class="brand-sidebar">
+            <p class="empty">加载中…</p>
+          </aside>
+          <div class="inventory-main">
+            <p id="inventoryCount" class="filter-count"></p>
+            <div id="inventoryList" class="list">
+              <p class="empty">加载中…</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-moves" class="panel hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div id="moveKindSeg" class="seg">
+            <button type="button" class="seg-btn is-active" data-kind="all">全部</button>
+            <button type="button" class="seg-btn" data-kind="in">只看入库</button>
+            <button type="button" class="seg-btn" data-kind="out">只看出库</button>
+          </div>
+          <input id="moveBuyerInput" type="text" placeholder="按购买者姓名筛选">
+          <input id="moveProductInput" type="text" placeholder="按商品筛选：名称 / 编码">
+          <button id="moveOrderFilter" type="button" class="filter-chip hidden" title="取消订单筛选"></button>
+          <button id="clearMoveFilterBtn" type="button" class="ghost">清空筛选</button>
+          <button id="refreshMovesBtn" type="button" class="ghost">刷新</button>
+        </div>
+        <p id="movesCount" class="filter-count"></p>
+        <div id="orderSummary" class="order-summary hidden"></div>
+        <div id="movesList" class="list">
+          <p class="empty">加载中…</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-orders" class="panel hidden">
+      <div class="card">
+        <div class="toolbar">
+          <input id="orderSearchInput" type="text" placeholder="搜索订单 ID / 客户姓名 / 商品名称">
+          <select id="orderSortSelect" class="mini-select" title="排序方式">
+            <option value="time">按时间（最新）</option>
+            <option value="sales">按金额（高 → 低）</option>
+            <option value="net">按净利润（高 → 低）</option>
+          </select>
+          <button id="refreshOrdersBtn" type="button" class="ghost">刷新</button>
+        </div>
+        <p id="ordersCount" class="filter-count"></p>
+        <div class="orders-layout">
+          <div id="ordersList" class="list orders-list">
+            <p class="empty">加载中…</p>
+          </div>
+          <div id="orderDetail" class="order-detail">
+            <p class="empty">从左侧选择一个订单，即可查看明细与成本利润</p>
+          </div>
+        </div>
+        <p class="hint" style="margin:16px 0 0">
+          价格口径：进价是<b>人民币</b>、售价是<b>美元</b>。订单金额 = 该订单每笔出库的数量 × 成交单价（美元）×
+          汇率（点右上角「$1 ≈ ¥」可改），商品成本按商品当前进价（人民币）估算；
+          净利润 = 订单金额 − 商品成本 − 其他成本。<br>
+          退回库存的商品会冲减本单金额、成本与利润（订单按实际成交部分结算）。
+        </p>
+      </div>
+    </section>
+
+    <section id="panel-report" class="panel hidden">
+      <div class="card">
+        <div class="toolbar">
+          <div id="reportModeSeg" class="seg">
+            <button type="button" class="seg-btn is-active" data-mode="day">按日</button>
+            <button type="button" class="seg-btn" data-mode="month">按月</button>
+            <button type="button" class="seg-btn" data-mode="year">按年</button>
+          </div>
+          <select id="reportYearSelect" class="mini-select"></select>
+          <select id="reportMonthSelect" class="mini-select"></select>
+          <button id="refreshReportBtn" type="button" class="ghost">刷新</button>
+        </div>
+        <p id="reportRangeLabel" class="filter-count"></p>
+        <div id="reportBody"></div>
+        <p class="hint" style="margin:16px 0 0">
+          统计口径：销售额 = 出库数量 × 成交单价（美元）× 汇率，折算为人民币；销售件数、笔数按出库流水累计，
+          订单退回库存的部分相应扣减；毛利按商品当前进价（人民币）估算（改过进价的历史记录会随之变化），
+          商品已删除的记录不计入毛利；毛利率 = 估算毛利 ÷ 销售额，销售额为 0 的周期显示「—」。
+        </p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="modalTitle">操作</h3>
+    <div id="modalBody"></div>
+    <p id="modalError" class="form-error"></p>
+    <div class="actions">
+      <button id="modalOk" type="button" class="primary">确定</button>
+      <button id="modalCancel" type="button" class="ghost">取消</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<!-- 品牌候选：由已录入商品的品牌自动汇总，供输入时补全 -->
+<datalist id="brandOptions"></datalist>
+<!-- 进货商候选：预置项（悠米 / 小时光）+ 已录入商品里自动汇总，避免同一家写出多个名字 -->
+<datalist id="supplierOptions"></datalist>
+
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

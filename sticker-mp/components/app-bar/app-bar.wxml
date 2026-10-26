@@ -1,0 +1,23 @@
+<view class="app-bar">
+  <view class="ab-left">
+    <text class="ab-title">{{title}}</text>
+    <text class="ab-sub" wx:if="{{subtitle}}">{{subtitle}}</text>
+  </view>
+  <view class="ab-right">
+    <view class="ab-rate" bindtap="openRate">$1 ≈ ¥{{rate}}</view>
+    <view class="ab-logout" wx:if="{{showLogout}}" bindtap="onLogout">退出</view>
+  </view>
+</view>
+
+<view class="ab-mask" wx:if="{{showRate}}" bindtap="closeRate">
+  <view class="ab-dlg" catchtap="noop">
+    <view class="ab-dlg-title">美元兑人民币汇率</view>
+    <view class="ab-dlg-note">售价与成交单价记的是美元，进价记的是人民币。订单金额、统计报表都按这个汇率把美元折成人民币，再减去人民币成本算利润。</view>
+    <input class="ab-input" type="digit" value="{{rateInput}}" bindinput="onRateInput" placeholder="例如 7.20" />
+    <view class="ab-error" wx:if="{{rateError}}">{{rateError}}</view>
+    <view class="ab-actions">
+      <button class="ab-btn ab-ghost" bindtap="closeRate">取消</button>
+      <button class="ab-btn ab-primary" bindtap="saveRate" loading="{{saving}}">保存</button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,140 @@
+<view class="wrap">
+  <app-bar
+    title="贴纸进销存"
+    subtitle="拍照建档 · 出入库 · 库存管理"
+    rate="{{rateText}}"
+    bind:ratechange="onRateChange"
+  />
+
+  <view class="boot" wx:if="{{loginError}}">
+    <view class="boot-title">{{loggedOut ? '已退出登录' : '没能登录成功'}}</view>
+    <view class="boot-text">{{loginError}}</view>
+    <view class="boot-text" wx:if="{{!loggedOut}}">微信登录需要在小程序里完成：如果是在电脑预览面板看到这句，请用手机扫码在微信中打开。</view>
+    <button class="btn btn-primary" style="margin-top:28rpx" bindtap="retry">{{loggedOut ? '微信一键登录' : '重试'}}</button>
+  </view>
+
+  <view class="boot" wx:elif="{{!ready}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在登录…</view>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <view class="card-title">拍照建档</view>
+      <view class="hint">拍摄或选择一张商品照片，自动识别名称、品牌、产地、材质、规格、执行标准；识别结果逐项核对后即可入库。</view>
+
+      <view class="upload" bindtap="choosePhoto">
+        <image wx:if="{{hasPhoto}}" class="upload-img" src="{{photoPath}}" mode="aspectFill" />
+        <view wx:else class="upload-empty">
+          <view class="cam"></view>
+          <text class="upload-tip">点击拍摄或从相册选择</text>
+          <text class="upload-sub">jpg / png，单张 12MB 以内</text>
+        </view>
+      </view>
+
+      <view class="btn-row">
+        <button
+          class="btn btn-primary"
+          bindtap="recognize"
+          disabled="{{!hasPhoto || recognizing}}"
+          loading="{{recognizing}}"
+        >开始 AI 识别</button>
+        <button class="btn btn-ghost" bindtap="clearPhoto">清除照片</button>
+        <button class="btn btn-ghost" bindtap="previewPhoto" wx:if="{{hasPhoto}}">看大图</button>
+      </view>
+
+      <view class="status {{recognizeStatusType}}" wx:if="{{recognizeStatus}}">{{recognizeStatus}}</view>
+    </view>
+
+    <view class="card" id="review" wx:if="{{showReview}}">
+      <view class="card-title">核对商品信息</view>
+      <view class="hint">AI 识别结果仅供参考，请逐项核对修改后入库。产品编码由系统自动生成、不会重复，无需填写。</view>
+
+      <view class="grid">
+        <view class="grid-cell full">
+          <text class="field-label">产品名称</text>
+          <input class="field-input" value="{{form.name}}" data-field="name" bindinput="onInput" placeholder="必填" />
+        </view>
+
+        <view class="grid-cell">
+          <view class="field-head">
+            <text class="field-label">品牌</text>
+            <picker wx:if="{{suggestions.brand.length}}" mode="selector" range="{{suggestions.brand}}" data-field="brand" bindchange="pickSuggestion">
+              <text class="pick-link">常用</text>
+            </picker>
+          </view>
+          <input class="field-input" value="{{form.brand}}" data-field="brand" bindinput="onInput" placeholder="选填" />
+        </view>
+
+        <view class="grid-cell">
+          <text class="field-label">产地</text>
+          <input class="field-input" value="{{form.origin}}" data-field="origin" bindinput="onInput" placeholder="选填" />
+        </view>
+
+        <view class="grid-cell">
+          <text class="field-label">材质</text>
+          <input class="field-input" value="{{form.material}}" data-field="material" bindinput="onInput" placeholder="选填" />
+        </view>
+
+        <view class="grid-cell">
+          <text class="field-label">规格</text>
+          <input class="field-input" value="{{form.spec}}" data-field="spec" bindinput="onInput" placeholder="选填" />
+        </view>
+
+        <view class="grid-cell full">
+          <text class="field-label">执行标准</text>
+          <input class="field-input" value="{{form.standard}}" data-field="standard" bindinput="onInput" placeholder="选填" />
+        </view>
+
+        <view class="grid-cell">
+          <view class="field-head">
+            <text class="field-label">进货渠道</text>
+          </view>
+          <picker mode="selector" range="{{channelLabels}}" bindchange="onChannelPick">
+            <view class="field-input field-picker">
+              {{form.channel || '点选渠道，可不填'}}
+              <text class="arrow">▾</text>
+            </view>
+          </picker>
+        </view>
+
+        <view class="grid-cell">
+          <view class="field-head">
+            <text class="field-label">进货商名称</text>
+            <picker mode="selector" range="{{supplierRange}}" data-field="supplier" bindchange="pickSuggestion">
+              <text class="pick-link">选择</text>
+            </picker>
+          </view>
+          <input class="field-input" value="{{form.supplier}}" data-field="supplier" bindinput="onInput" placeholder="选填，可从列表选也可直接输入" />
+        </view>
+
+        <view class="grid-cell">
+          <text class="field-label">进价（人民币 ¥）</text>
+          <input class="field-input" type="digit" value="{{form.cost}}" data-field="cost" bindinput="onInput" placeholder="必填" />
+        </view>
+
+        <view class="grid-cell">
+          <text class="field-label">售价（美元 $）</text>
+          <input class="field-input" type="digit" value="{{form.sale}}" data-field="sale" bindinput="onInput" placeholder="必填" />
+        </view>
+
+        <view class="grid-cell">
+          <text class="field-label">初始库存</text>
+          <input class="field-input" type="number" value="{{form.stock}}" data-field="stock" bindinput="onInput" placeholder="默认 1 件" />
+        </view>
+
+        <view class="grid-cell">
+          <text class="field-label">备注</text>
+          <input class="field-input" value="{{form.note}}" data-field="note" bindinput="onInput" placeholder="选填" />
+        </view>
+      </view>
+
+      <view class="btn-row">
+        <button class="btn btn-primary" bindtap="save" loading="{{saving}}" disabled="{{saving}}">确认入库</button>
+        <button class="btn btn-ghost" bindtap="clearPhoto">重新建档</button>
+      </view>
+
+      <view class="status {{saveStatusType}}" wx:if="{{saveStatus}}">{{saveStatus}}</view>
+    </view>
+  </block>
+</view>

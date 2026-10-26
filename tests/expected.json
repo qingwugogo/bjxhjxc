@@ -1,0 +1,292 @@
+{
+  "products_total": 23,
+  "moves_total": 206,
+  "brands": [
+    [
+      "MoonBerry",
+      3,
+      82
+    ],
+    [
+      "Yuki Studio",
+      2,
+      54
+    ],
+    [
+      "__none__",
+      2,
+      77
+    ],
+    [
+      "嘟嘟贴纸屋",
+      4,
+      97
+    ],
+    [
+      "拾光集 SHIGUANGJI",
+      1,
+      7
+    ],
+    [
+      "星尘手帐",
+      4,
+      123
+    ],
+    [
+      "星星糖文创",
+      1,
+      11
+    ],
+    [
+      "朝柚",
+      1,
+      8
+    ],
+    [
+      "纸间集",
+      5,
+      83
+    ]
+  ],
+  "out_of_stock": 1,
+  "low_stock": 1,
+  "hit_cat": 2,
+  "hit_code": 1,
+  "window_total": 200,
+  "window_mk001_all": 21,
+  "window_mk001_out": 17,
+  "window_jessica": 5,
+  "window_phone555": 0,
+  "window_order1064": 3,
+  "window_orphan_out": 32,
+  "window_in_total": 45,
+  "window_chips": 123,
+  "order_1064": {
+    "moves": 3,
+    "qty": 9,
+    "sales": 625.7520000000001,
+    "cost": 32.3,
+    "other_cost": 6.95,
+    "net": 586.5020000000001,
+    "margin": 0.9372754701543103
+  },
+  "report": {
+    "month202610": {
+      "sales": 3886.488,
+      "qty": 66,
+      "orders": 32,
+      "profit": 3231.688
+    },
+    "year2026": {
+      "sales": 17811.36,
+      "qty": 297,
+      "orders": 143,
+      "profit": 16422.260000000002
+    },
+    "year2025": {
+      "sales": 1451.0159999999998,
+      "qty": 28,
+      "orders": 12,
+      "profit": 1372.816
+    },
+    "day20261014": {
+      "sales": 745.6320000000001,
+      "qty": 17,
+      "orders": 12,
+      "profit": 254.23199999999997
+    },
+    "all": {
+      "sales": 19262.376,
+      "qty": 325,
+      "orders": 155,
+      "profit": 17795.076
+    }
+  },
+  "top_product": [
+    "【测试】星空夜光贴纸套装",
+    2861.928,
+    31
+  ],
+  "top_oct": [
+    "【测试】星空夜光贴纸套装",
+    841.7520000000001,
+    9
+  ],
+  "orders": {
+    "total": {
+      "orders": 70,
+      "moves": 123,
+      "qty": 263,
+      "sales": 15385.536,
+      "cost": 1183.9,
+      "other": 122.84,
+      "net": 14078.795999999997
+    },
+    "top_sales": [
+      {
+        "no": "MOCK-TK2026091038",
+        "moves": 3,
+        "qty": 6,
+        "sales": 676.3679999999999,
+        "cost": 34.0,
+        "other": 8.0,
+        "net": 634.3679999999999,
+        "margin": 0.9379036264282166,
+        "buyer": "Michael Turner",
+        "products": [
+          [
+            "【测试】圣诞麋鹿烫金贴纸",
+            2
+          ],
+          [
+            "【测试】Y2K 镭射闪光贴纸",
+            4
+          ]
+        ]
+      },
+      {
+        "no": "MOCK-TK2026101064",
+        "moves": 3,
+        "qty": 9,
+        "sales": 625.7520000000001,
+        "cost": 32.3,
+        "other": 6.95,
+        "net": 586.5020000000001,
+        "margin": 0.9372754701543103,
+        "buyer": "Amelia Brooks",
+        "products": [
+          [
+            "【测试】森系植物手帐贴纸包",
+            4
+          ],
+          [
+            "【测试】星空夜光贴纸套装",
+            3
+          ],
+          [
+            "【测试】美式复古公路贴纸",
+            2
+          ]
+        ]
+      },
+      {
+        "no": "MOCK-TK2026100762",
+        "moves": 2,
+        "qty": 7,
+        "sales": 473.544,
+        "cost": 26.9,
+        "other": 7.89,
+        "net": 438.754,
+        "margin": 0.9265326981230889,
+        "buyer": "Charlotte Webb",
+        "products": [
+          [
+            "【测试】Y2K 镭射闪光贴纸",
+            3
+          ],
+          [
+            "【测试】莫兰迪色系标签贴纸",
+            4
+          ]
+        ]
+      }
+    ],
+    "top_net": {
+      "no": "MOCK-TK2026091038",
+      "moves": 3,
+      "qty": 6,
+      "sales": 676.3679999999999,
+      "cost": 34.0,
+      "other": 8.0,
+      "net": 634.3679999999999,
+      "margin": 0.9379036264282166,
+      "buyer": "Michael Turner",
+      "products": [
+        [
+          "【测试】圣诞麋鹿烫金贴纸",
+          2
+        ],
+        [
+          "【测试】Y2K 镭射闪光贴纸",
+          4
+        ]
+      ]
+    },
+    "newest": {
+      "no": "TK2026101403",
+      "moves": 3,
+      "qty": 6,
+      "sales": 144.0,
+      "cost": 192.0,
+      "other": 0.0,
+      "net": -48.0,
+      "margin": -0.3333333333333333,
+      "buyer": "order-test",
+      "products": [
+        [
+          "50浮生定格·人骸",
+          3
+        ],
+        [
+          "朝柚文创造景贴纸 高透27.0 - 拾贝时光",
+          2
+        ],
+        [
+          "猫咪咖啡厅的温暖午后时光",
+          1
+        ]
+      ]
+    },
+    "star": {
+      "no": "MOCK-TK2026091946",
+      "moves": 1,
+      "qty": 4,
+      "sales": 431.712,
+      "cost": 22.0,
+      "other": 3.0,
+      "net": 406.712,
+      "margin": 0.9420910236453932,
+      "buyer": "Isabella Nguyen",
+      "products": [
+        [
+          "【测试】Y2K 镭射闪光贴纸",
+          4
+        ]
+      ]
+    },
+    "o1064": {
+      "no": "MOCK-TK2026101064",
+      "moves": 3,
+      "qty": 9,
+      "sales": 625.7520000000001,
+      "cost": 32.3,
+      "other": 6.95,
+      "net": 586.5020000000001,
+      "margin": 0.9372754701543103,
+      "buyer": "Amelia Brooks",
+      "products": [
+        [
+          "【测试】森系植物手帐贴纸包",
+          4
+        ],
+        [
+          "【测试】星空夜光贴纸套装",
+          3
+        ],
+        [
+          "【测试】美式复古公路贴纸",
+          2
+        ]
+      ]
+    },
+    "with_other": 45,
+    "no_buyer": 2,
+    "search": {
+      "michael": 5,
+      "isabella": 5,
+      "star_product": 11,
+      "none": 0
+    }
+  },
+  "rate": 7.2
+}

@@ -1,0 +1,5 @@
+.move-input {
+  display: block;
+  width: 100%;
+  margin-top: 12rpx;
+}

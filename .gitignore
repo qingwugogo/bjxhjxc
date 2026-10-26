@@ -1,0 +1,18 @@
+# 依赖与构建产物（小程序 SDK 用 libs/ 固化副本，不再依赖 node_modules）
+node_modules/
+miniprogram_npm/
+package-lock.json
+
+# WorkBuddy 本地数据
+.workbuddy/
+
+# 日志与临时文件
+*.log
+*.pyc
+__pycache__/
+.DS_Store
+deploy/runtime/server.pid
+deploy/runtime/server.port
+
+# 微信开发者工具个人配置
+sticker-mp/project.private.config.json

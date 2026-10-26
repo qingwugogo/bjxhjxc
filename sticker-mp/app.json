@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/create/create",
+    "pages/inventory/inventory",
+    "pages/moves/moves",
+    "pages/orders/orders",
+    "pages/report/report",
+    "pages/order-detail/order-detail"
+  ],
+  "window": {
+    "navigationBarTitleText": "贴纸进销存",
+    "navigationBarBackgroundColor": "#4f46e5",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f5f6fa",
+    "backgroundTextStyle": "dark"
+  },
+  "tabBar": {
+    "color": "#6b7280",
+    "selectedColor": "#4f46e5",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/create/create", "text": "建档" },
+      { "pagePath": "pages/inventory/inventory", "text": "库存" },
+      { "pagePath": "pages/moves/moves", "text": "流水" },
+      { "pagePath": "pages/orders/orders", "text": "订单" },
+      { "pagePath": "pages/report/report", "text": "报表" }
+    ]
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "sitemapLocation": "sitemap.json"
+}

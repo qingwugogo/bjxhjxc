@@ -1,0 +1,56 @@
+<view class="wrap">
+  <app-bar title="订单管理" subtitle="按订单聚合 · 成本利润" rate="{{rateText}}" bind:ratechange="onRateChange" />
+
+  <view class="boot" wx:if="{{loginError}}">
+    <view class="boot-title">{{loggedOut ? '已退出登录' : '没能登录成功'}}</view>
+    <view class="boot-text">{{loginError}}</view>
+    <button class="btn btn-primary" style="margin-top:28rpx" bindtap="retry">{{loggedOut ? '微信一键登录' : '重试'}}</button>
+  </view>
+
+  <view class="boot" wx:elif="{{!ready}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在登录…</view>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <input class="input" placeholder="搜索订单 ID / 客户姓名 / 商品名称" value="{{keyword}}" bindinput="onSearch" />
+
+      <view class="row toolbar-row">
+        <picker mode="selector" range="{{sortLabels}}" bindchange="onSortChange" class="flex1">
+          <view class="input picker-box">
+            {{sortLabel}}
+            <text class="arrow">▾</text>
+          </view>
+        </picker>
+        <button class="btn btn-ghost btn-sm" style="margin-left:12rpx" bindtap="refresh">刷新</button>
+      </view>
+
+      <view class="filter-count" wx:if="{{countText}}">{{countText}}</view>
+    </view>
+
+    <view class="card">
+      <view wx:if="{{loading}}" class="empty">加载中…</view>
+      <view wx:elif="{{list.length === 0}}" class="empty">{{emptyText}}</view>
+
+      <view class="item order-row" wx:for="{{list}}" wx:key="orderNo" data-no="{{item.orderNo}}" bindtap="openDetail">
+        <view class="item-main">
+          <view class="item-title">
+            {{item.orderNo}}
+            <text wx:if="{{item.flagText}}" class="badge {{item.flagCls}}">{{item.flagText}}</text>
+          </view>
+          <view class="item-meta">
+            客户 <text class="strong">{{item.buyerText}}</text> · {{item.moves}} 笔 · {{item.qty}} 件
+          </view>
+          <view class="item-meta">
+            金额 <text class="strong">{{item.salesText}}</text> ·
+            成本 <text class="strong">{{item.costText}}</text> ·
+            净利润 <text class="strong {{item.netClass}}">{{item.netText}}</text>
+          </view>
+          <view class="item-meta">{{item.range}}</view>
+        </view>
+        <view class="detail-arrow">详情 ›</view>
+      </view>
+    </view>
+  </block>
+</view>

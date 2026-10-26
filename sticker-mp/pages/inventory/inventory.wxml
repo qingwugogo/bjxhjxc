@@ -1,0 +1,126 @@
+<view class="wrap">
+  <app-bar title="库存" subtitle="按品牌筛选 · 出库 / 补货 / 编辑" rate="{{rateText}}" bind:ratechange="onRateChange" />
+
+  <view class="boot" wx:if="{{loginError}}">
+    <view class="boot-title">{{loggedOut ? '已退出登录' : '没能登录成功'}}</view>
+    <view class="boot-text">{{loginError}}</view>
+    <button class="btn btn-primary" style="margin-top:28rpx" bindtap="retry">{{loggedOut ? '微信一键登录' : '重试'}}</button>
+  </view>
+
+  <view class="boot" wx:elif="{{!ready}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在登录…</view>
+  </view>
+
+  <block wx:else>
+    <view class="card order-card {{activeOrder ? 'is-active' : ''}}">
+      <view class="card-head">
+        <view class="card-title">订单出库</view>
+        <text class="badge badge-in" wx:if="{{activeOrder}}">进行中</text>
+      </view>
+
+      <view class="order-inputs">
+        <input class="input" placeholder="订单 ID，例如 TK20261014001" value="{{orderNo}}" bindinput="onOrderInput" />
+        <input class="input" placeholder="客户姓名（选填）" value="{{buyerName}}" maxlength="24" bindinput="onBuyerInput" />
+      </view>
+
+      <view class="btn-row">
+        <button class="btn btn-primary" bindtap="startOrder">{{activeOrder ? '切换 / 更新客户' : '开始出库'}}</button>
+        <button class="btn btn-ghost" bindtap="endOrder" disabled="{{!activeOrder}}">出库结束</button>
+      </view>
+
+      <view class="status {{activeOrder ? 'is-ok' : ''}}">{{orderStatusText}}</view>
+    </view>
+
+    <view class="card">
+      <view class="row">
+        <input class="input flex1" placeholder="搜索名称 / 编码 / 品牌" value="{{keyword}}" bindinput="onSearch" />
+        <button class="btn btn-ghost btn-sm" style="margin-left:12rpx" bindtap="refresh">刷新</button>
+      </view>
+
+      <view class="seg">
+        <view class="seg-item {{!archivedView ? 'is-active' : ''}}" data-archived="0" bindtap="toggleArchivedView">在售</view>
+        <view class="seg-item {{archivedView ? 'is-active' : ''}}" data-archived="1" bindtap="toggleArchivedView">
+          已归档<text wx:if="{{archivedCount > 0}}" class="seg-count">{{archivedCount}}</text>
+        </view>
+      </view>
+
+      <scroll-view scroll-x class="chip-scroll" enhanced show-scrollbar="{{false}}">
+        <view class="chip-row">
+          <view class="chip {{brandKey === '__all__' ? 'is-active' : ''}}" data-key="__all__" bindtap="selectBrand">
+            全部商品<text class="chip-count">{{products.length}}</text>
+          </view>
+          <view
+            wx:for="{{brands}}"
+            wx:key="key"
+            class="chip {{brandKey === item.key ? 'is-active' : ''}}"
+            data-key="{{item.key}}"
+            bindtap="selectBrand"
+          >{{item.name}}<text class="chip-count">{{item.count}}</text></view>
+        </view>
+      </scroll-view>
+
+      <view class="filter-count" wx:if="{{countText}}">{{countText}}</view>
+
+      <view wx:if="{{loading}}" class="empty">加载中…</view>
+      <view wx:elif="{{list.length === 0}}" class="empty">{{emptyText}}</view>
+
+      <view
+        class="item {{item.archived ? 'is-archived' : ''}}"
+        wx:for="{{list}}"
+        wx:key="id"
+      >
+        <image
+          wx:if="{{item.thumb}}"
+          class="item-thumb"
+          src="{{item.thumb}}"
+          mode="aspectFill"
+          data-url="{{item.thumb}}"
+          bindtap="previewPhoto"
+        />
+        <view wx:else class="item-thumb item-thumb-placeholder">照片</view>
+
+        <view class="item-main">
+          <view class="item-title">
+            {{item.name}}
+            <text wx:if="{{item.badgeText}}" class="badge {{item.badgeCls}}">{{item.badgeText}}</text>
+          </view>
+          <view class="item-code">{{item.code}}</view>
+          <view class="item-meta">
+            库存 <text class="strong">{{item.stock}}</text> ·
+            进价 <text class="strong">{{item.costText}}</text> ·
+            售价 <text class="strong">{{item.saleText}}</text>
+          </view>
+          <view class="item-meta">入库 <text class="strong">{{item.inText}}</text> · 出库 <text class="strong">{{item.outText}}</text></view>
+          <view class="item-meta">进货 {{item.sourceText}}</view>
+          <view class="item-meta">{{item.detailText}}</view>
+        </view>
+
+        <view class="item-actions" wx:if="{{!item.archived}}">
+          <button class="btn btn-primary btn-sm" data-id="{{item.id}}" bindtap="openMoveOut" disabled="{{!item.canOut}}">出库销售</button>
+          <button class="btn {{item.isUrgent ? 'btn-soft' : 'btn-ghost'}} btn-sm" data-id="{{item.id}}" bindtap="openMoveIn">补货</button>
+          <button class="btn btn-ghost btn-sm" data-id="{{item.id}}" bindtap="openEdit">编辑</button>
+          <button class="btn btn-ghost btn-sm" data-id="{{item.id}}" bindtap="archiveProduct">归档</button>
+        </view>
+        <view class="item-actions" wx:else>
+          <button class="btn btn-primary btn-sm" data-id="{{item.id}}" bindtap="restoreProduct">恢复上架</button>
+          <button class="btn btn-ghost btn-sm" data-id="{{item.id}}" bindtap="openEdit">编辑</button>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>
+
+<form-dialog
+  show="{{dialog.show}}"
+  title="{{dialog.title}}"
+  note="{{dialog.note}}"
+  error="{{dialog.error}}"
+  fields="{{dialog.fields}}"
+  busy="{{dialog.busy}}"
+  submit-text="{{dialog.submitText}}"
+  danger-text="{{dialog.dangerText}}"
+  bind:cancel="closeDialog"
+  bind:submit="onDialogSubmit"
+  bind:danger="onDialogDanger"
+/>
