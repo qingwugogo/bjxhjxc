@@ -724,6 +724,7 @@ button.blue.urge:hover:not(:disabled) {
 .os-label { font-size: 11.5px; color: var(--muted); margin: 0 0 3px; }
 .os-value { font-size: 16px; font-weight: 650; margin: 0; letter-spacing: -.2px; font-variant-numeric: tabular-nums; }
 .os-note { font-size: 11px; color: var(--muted-2); margin: 3px 0 0; line-height: 1.5; }
+.os-formula { font-size: 11px; color: var(--danger); font-weight: 600; margin: 3px 0 0; line-height: 1.5; }
 .os-value.is-net { color: var(--success); }
 .os-value.is-loss { color: var(--danger); }
 /* 盈亏配色在列表里也要生效（盈利绿 / 亏损红，与结算卡一致） */

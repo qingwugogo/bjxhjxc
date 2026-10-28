@@ -2,7 +2,7 @@
   "name": "sticker-inventory-mp",
   "version": "1.0.0",
   "private": true,
-  "description": "贴纸进销存 · 微信小程序",
+  "description": "贴纸小助手 · 微信小程序",
   "dependencies": {
     "@tencent-ai/workbuddy-cloud-sdk": "dev"
   }

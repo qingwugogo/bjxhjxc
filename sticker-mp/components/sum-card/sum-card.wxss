@@ -59,6 +59,12 @@
   margin-top: 2rpx;
 }
 
+/* 订单金额下方的换算公式（$xx × 汇率），要求红色醒目 */
+.sum-formula {
+  color: #dc2626;
+  font-weight: 600;
+}
+
 .sum-actions {
   margin-top: 12rpx;
 }

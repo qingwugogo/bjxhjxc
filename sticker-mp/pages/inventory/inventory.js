@@ -92,7 +92,7 @@ Page({
     } else {
       const who = active.buyerName ? '（客户 ' + active.buyerName + '）' : '';
       const progress = active.moves > 0
-        ? ' · 已录 ' + active.moves + ' 笔 / ' + active.qty + ' 件 / ' + fmtUsd(active.amount)
+        ? ' · 已出库 ' + active.moves + ' 笔 / ' + active.qty + ' 件 / ' + fmtUsd(active.amount)
         : ' · 还没出库任何商品';
       text = '正在为订单 ' + active.no + who + ' 出库（' + fmtTime(active.startedAt) + ' 开始）' + progress;
     }
@@ -107,9 +107,9 @@ Page({
     this.setData({ buyerName: e.detail.value });
   },
 
-  startOrder() {
+  async startOrder() {
     const no = String(this.data.orderNo).trim();
-    const buyerName = String(this.data.buyerName).trim();
+    let buyerName = String(this.data.buyerName).trim();
     if (!no) {
       wx.showToast({ title: '请先填写订单 ID', icon: 'none' });
       return;
@@ -130,22 +130,41 @@ Page({
       return;
     }
 
+    /* 先查云端：老订单带出已有出库进度，与新订单区分开 */
+    wx.showLoading({ title: '查询订单中…', mask: true });
+    const existing = await db.getOrderSummary(no);
+    wx.hideLoading();
+    let qty = 0, moves = 0, amount = 0;
+    let summaryNote = '';
+    if (existing && existing.moves > 0) {
+      moves = existing.moves;
+      qty = existing.qty;
+      amount = existing.amount;
+      // 客户姓名：用户没填就带出订单里已有的
+      if (!buyerName && existing.buyer) buyerName = existing.buyer;
+      summaryNote = '已有 ' + moves + ' 笔 / ' + qty + ' 件 / ' + fmtUsd(amount) + '，继续出库即可';
+    }
+
     const prevNo = active ? active.no : '';
     app.setActiveOrder({
       no,
       buyerName,
       startedAt: new Date().toISOString(),
-      qty: 0,
-      moves: 0,
-      amount: 0,
+      qty: qty,
+      moves: moves,
+      amount: amount,
     });
     this.syncOrderBar();
     this.setData({ orderNo: '', buyerName: '' });
     const who = buyerName ? '（' + buyerName + '）' : '';
-    wx.showToast({
-      title: prevNo ? '已结束 ' + prevNo + '，开始为 ' + no + ' 出库' : '开始为订单 ' + no + who + ' 出库',
-      icon: 'none',
-    });
+    if (summaryNote) {
+      wx.showToast({ title: '订单 ' + no + who + summaryNote, icon: 'none', duration: 3000 });
+    } else {
+      wx.showToast({
+        title: prevNo ? '已结束 ' + prevNo + '，新订单 ' + no + who + '开始出库' : '新订单，开始为 ' + no + who + '出库',
+        icon: 'none',
+      });
+    }
   },
 
   endOrder() {

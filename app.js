@@ -1169,6 +1169,38 @@ function saveActiveOrder() {
   } catch (e) { /* 存不了不影响本次使用 */ }
 }
 
+/* 按订单号查云端已有出库进度（笔数 / 件数 / 金额，退货冲减后）。
+   用于「开始出库」时识别老订单：查到就带出，查不到就是新订单。
+   查询失败返回 null，不阻塞开始出库（按新订单处理） */
+async function fetchExistingOrderProgress(no) {
+  try {
+    const { data, error } = await cloud.database.from('stock_moves')
+      .select('move_type,quantity,unit_price,is_return,buyer_name')
+      .eq('order_no', no)
+      .limit(1000);
+    if (error || !Array.isArray(data)) return null;
+    let moves = 0, qty = 0, amount = 0, buyer = '';
+    data.forEach((m) => {
+      const q = Number(m.quantity) || 0;
+      const pr = Number(m.unit_price) || 0;
+      if (m.move_type === 'out') {
+        moves += 1;
+        qty += q;
+        amount += q * pr;
+        const b = String(m.buyer_name == null ? '' : m.buyer_name).trim();
+        if (b) buyer = b;
+      } else if (m.is_return) {
+        // 与订单统计同口径：退货冲减数量与金额，不为负
+        qty = Math.max(0, qty - q);
+        amount = Math.max(0, amount - q * pr);
+      }
+    });
+    return { moves, qty, amount, buyer };
+  } catch (e) {
+    return null;
+  }
+}
+
 function renderOrderBar() {
   const bar = $('orderBar');
   if (!bar) return;
@@ -1183,7 +1215,7 @@ function renderOrderBar() {
     return;
   }
   const progress = activeOrder.moves > 0
-    ? ' · 已录 <b>' + activeOrder.moves + '</b> 笔 / <b>' + activeOrder.qty +
+    ? ' · 已出库 <b>' + activeOrder.moves + '</b> 笔 / <b>' + activeOrder.qty +
       '</b> 件 / <b>' + fmtUsd(activeOrder.amount) + '</b>'
     : ' · 还没出库任何商品';
   status.innerHTML = '当前正在为订单 <b>' + esc(activeOrder.no) + '</b>' +
@@ -1191,11 +1223,11 @@ function renderOrderBar() {
     '（' + esc(fmtTime(activeOrder.startedAt)) + ' 开始）' + progress;
 }
 
-function startOrder() {
+async function startOrder() {
   const input = $('orderInput');
   const buyerInput = $('orderBuyerInput');
   const no = input.value.trim();
-  const buyerName = buyerInput ? buyerInput.value.trim() : '';
+  let buyerName = buyerInput ? buyerInput.value.trim() : '';
 
   // 订单 ID 必填（出库必须关联订单号），客户姓名选填
   if (!no) {
@@ -1218,19 +1250,38 @@ function startOrder() {
     return;
   }
 
+  /* 先查云端：老订单带出已有出库进度与新订单区分开 */
+  toast('正在查询订单 ' + no + ' …');
+  const existing = await fetchExistingOrderProgress(no);
+  let qty = 0, moves = 0, amount = 0;
+  let extraNote = '';
+  if (existing && existing.moves > 0) {
+    moves = existing.moves;
+    qty = existing.qty;
+    amount = existing.amount;
+    // 客户姓名：用户没填就带出订单里已有的
+    if (!buyerName && existing.buyer) buyerName = existing.buyer;
+    extraNote = '该订单已有 ' + moves + ' 笔 / ' + qty + ' 件 / ' + fmtUsd(amount) +
+      ' 出库记录，已带出，继续出库即可';
+  }
+
   const prev = activeOrder ? activeOrder.no : '';
   activeOrder = {
     no: no, buyerName: buyerName,
-    startedAt: new Date().toISOString(), qty: 0, moves: 0, amount: 0,
+    startedAt: new Date().toISOString(), qty: qty, moves: moves, amount: amount,
   };
   saveActiveOrder();
   renderOrderBar();
   input.value = '';
   if (buyerInput) buyerInput.value = '';
   const who = buyerName ? '（' + buyerName + '）' : '';
-  toast(prev
-    ? '已结束订单 ' + prev + ' 的出库，开始为 ' + no + who + '出库'
-    : '开始为订单 ' + no + who + '出库');
+  if (extraNote) {
+    toast('订单 ' + no + who + '：' + extraNote);
+  } else {
+    toast(prev
+      ? '已结束订单 ' + prev + ' 的出库，开始为 ' + no + who + '出库'
+      : '新订单，开始为订单 ' + no + who + '出库');
+  }
 }
 
 function endOrder() {
@@ -1889,7 +1940,7 @@ function orderSumCardHtml(r) {
     '</div>' +
     '<div class="order-sum-grid">' +
       '<div><p class="os-label">订单金额</p><p class="os-value">' + fmtMoney(r.sales) + '</p>' +
-        '<p class="os-note">' + fmtUsd(r.salesUsd) + ' × ' + fmtRate() + '</p></div>' +
+        '<p class="os-formula">' + fmtUsd(r.salesUsd) + ' × ' + fmtRate() + '</p></div>' +
       '<div><p class="os-label">商品成本</p><p class="os-value">' + fmtMoney(r.cost) + '</p></div>' +
       '<div><p class="os-label">其他成本</p><p class="os-value">' + fmtMoney(r.otherCost) + '</p></div>' +
       '<div><p class="os-label">净利润</p><p class="os-value' + netCls + '">' + fmtMoney(r.net) + '</p>' +

@@ -6,7 +6,7 @@ Component({
     styleIsolation: 'isolated',
   },
   properties: {
-    title: { type: String, value: '贴纸进销存' },
+    title: { type: String, value: '贴纸小助手' },
     subtitle: { type: String, value: '' },
     rate: { type: String, value: '7.20' },
     showLogout: { type: Boolean, value: true },

@@ -3,7 +3,7 @@
   "compileType": "miniprogram",
   "appid": "wxe7702598653982b3",
   "projectname": "sticker-inventory-mp",
-  "description": "贴纸进销存 · 微信小程序",
+  "description": "贴纸小助手 · 微信小程序",
   "libVersion": "3.5.5",
   "setting": {
     "es6": true,

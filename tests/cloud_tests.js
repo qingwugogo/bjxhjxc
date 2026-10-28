@@ -77,7 +77,7 @@ function section(title) { console.log('\n\x1b[1m' + title + '\x1b[0m'); }
   t(loginVisible, 'I2.2 未登录时登录界面已渲染（SDK 初始化成功）');
   t(await page.evaluate(() => typeof window.WorkBuddyCloud === 'object' && !!window.WorkBuddyCloud),
     'I2.3 云服务 SDK 全局对象已就绪');
-  t((await page.title()) === '贴纸进销存', 'I2.4 页面标题：贴纸进销存');
+  t((await page.title()) === '贴纸小助手', 'I2.4 页面标题：贴纸小助手');
   const ui = await page.evaluate(() => ({
     send: !!document.getElementById('sendCodeBtn'),
     login: !!document.getElementById('loginBtn'),

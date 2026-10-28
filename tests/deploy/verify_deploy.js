@@ -84,7 +84,7 @@ function section(title) { console.log('\n\x1b[1m' + title + '\x1b[0m'); }
   t(sdkOk, '云服务 SDK 全局对象已就绪');
 
   const title = await page.title();
-  t(title === '贴纸进销存', '页面标题：' + title);
+  t(title === '贴纸小助手', '页面标题：' + title);
 
   const buttons = await page.evaluate(() => ({
     send: !!document.getElementById('sendCodeBtn'),

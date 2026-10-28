@@ -8,7 +8,7 @@
     "pages/order-detail/order-detail"
   ],
   "window": {
-    "navigationBarTitleText": "贴纸进销存",
+    "navigationBarTitleText": "贴纸小助手",
     "navigationBarBackgroundColor": "#4f46e5",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f6fa",

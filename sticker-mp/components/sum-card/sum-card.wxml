@@ -8,7 +8,7 @@
     <view class="sum-cell">
       <view class="sum-label">订单金额</view>
       <view class="sum-value">{{card.salesText}}</view>
-      <view class="sum-note">{{card.salesUsdText}} {{card.rateText}}</view>
+      <view class="sum-note sum-formula">{{card.salesUsdText}} {{card.rateText}}</view>
     </view>
     <view class="sum-cell">
       <view class="sum-label">商品成本</view>

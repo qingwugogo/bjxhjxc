@@ -157,6 +157,36 @@ async function insertMove(move) {
   return cloud.database.from('stock_moves').insert(move);
 }
 
+/* 「开始出库」前按订单号查云端已有出库进度（退货冲减后）。
+   查到 moves>0 即老订单，带出继续；查不到 / 失败返回 null 当新订单 */
+async function getOrderSummary(orderNo) {
+  try {
+    const res = await cloud.database.from('stock_moves')
+      .select('move_type,quantity,unit_price,is_return,buyer_name')
+      .eq('order_no', orderNo)
+      .limit(1000);
+    if (res.error || !Array.isArray(res.data)) return null;
+    let moves = 0, qty = 0, amount = 0, buyer = '';
+    res.data.forEach((m) => {
+      const q = Number(m.quantity) || 0;
+      const pr = Number(m.unit_price) || 0;
+      if (m.move_type === 'out') {
+        moves += 1;
+        qty += q;
+        amount += q * pr;
+        const b = String(m.buyer_name == null ? '' : m.buyer_name).trim();
+        if (b) buyer = b;
+      } else if (m.is_return) {
+        qty = Math.max(0, qty - q);
+        amount = Math.max(0, amount - q * pr);
+      }
+    });
+    return { moves, qty, amount, buyer };
+  } catch (e) {
+    return null;
+  }
+}
+
 /* 流水列表：最近 N 条（网页版口径 200 条） */
 async function listMoves(limit) {
   return cloud.database
@@ -365,6 +395,7 @@ module.exports = {
   stockDeltaForMove,
   getProductStock,
   insertMove,
+  getOrderSummary,
   listMoves,
   listOrderMoves,
   listAllOrderMoves,

@@ -1,6 +1,6 @@
 <view class="wrap">
   <app-bar
-    title="贴纸进销存"
+    title="贴纸小助手"
     subtitle="拍照建档 · 出入库 · 库存管理"
     rate="{{rateText}}"
     bind:ratechange="onRateChange"
