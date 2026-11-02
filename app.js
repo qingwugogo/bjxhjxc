@@ -1060,8 +1060,8 @@ function inventoryItem(p) {
       ? '<span class="badge out">缺货</span>'
       : (stock <= LOW_STOCK_AT ? '<span class="badge low">库存偏低</span>' : ''));
 
-  // 库存列表只展示品牌；产地 / 材质 / 规格 / 执行标准仍在建档和编辑里可查可改，不在列表里占行
-  const detail = p.brand ? '品牌 ' + esc(p.brand) : '';
+  // 库存列表只展示品牌（没填也保留这一行，显示「—」）；产地 / 材质 / 规格 / 执行标准不在列表里占行
+  const detail = p.brand ? '品牌 ' + esc(p.brand) : '—';
 
   // 进货信息（渠道 / 进货商）：选填，没登记就显示「—」
   const source = [
@@ -1081,7 +1081,7 @@ function inventoryItem(p) {
       '<p class="item-meta">入库 <b>' + fmtTimeOrDash(p.last_in_at) +
         '</b> · 出库 <b>' + fmtTimeOrDash(p.last_out_at) + '</b></p>' +
       '<p class="item-meta item-source">进货 ' + source + '</p>' +
-      (detail ? '<p class="item-meta">' + detail + '</p>' : '') +
+      '<p class="item-meta">' + detail + '</p>' +
     '</div>' +
     '<div class="item-actions">' +
       (p.archived

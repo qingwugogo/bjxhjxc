@@ -93,7 +93,7 @@
           </view>
           <view class="item-meta">入库 <text class="strong">{{item.inText}}</text> · 出库 <text class="strong">{{item.outText}}</text></view>
           <view class="item-meta">进货 {{item.sourceText}}</view>
-          <view class="item-meta" wx:if="{{item.detailText}}">{{item.detailText}}</view>
+          <view class="item-meta">{{item.detailText}}</view>
         </view>
 
         <view class="item-actions" wx:if="{{!item.archived}}">
