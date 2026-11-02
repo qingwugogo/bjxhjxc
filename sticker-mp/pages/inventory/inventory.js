@@ -242,13 +242,8 @@ Page({
       else if (stock <= 0) { badgeText = '缺货'; badgeCls = 'badge-out'; }
       else if (stock <= LOW_STOCK_AT) { badgeText = '库存偏低'; badgeCls = 'badge-low'; }
 
-      const detail = [
-        p.brand ? '品牌 ' + p.brand : '',
-        p.origin ? '产地 ' + p.origin : '',
-        p.material ? '材质 ' + p.material : '',
-        p.spec ? '规格 ' + p.spec : '',
-        p.standard ? '执行标准 ' + p.standard : '',
-      ].filter(Boolean).join(' · ') || '—';
+      /* 库存列表只展示品牌；产地 / 材质 / 规格 / 执行标准仍在建档与编辑弹窗里可查可改 */
+      const detail = p.brand ? '品牌 ' + p.brand : '';
 
       const source = [
         p.purchase_channel ? '渠道 ' + p.purchase_channel : '',
