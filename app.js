@@ -191,7 +191,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab').forEach((t) => {
     t.classList.toggle('is-active', t.dataset.tab === name);
   });
-  ['create', 'inventory', 'moves', 'orders', 'report'].forEach((n) => {
+  ['create', 'inventory', 'moves', 'orders', 'dup', 'report'].forEach((n) => {
     $('panel-' + n).classList.toggle('hidden', n !== name);
   });
   if (name === 'inventory') loadInventory();
@@ -2499,6 +2499,139 @@ function openReturnDialog(orderNo, productId) {
   });
 }
 
+/* ================= 查重：某客户是否买过某商品 =================
+   口径与订单统计一致：只看 out，退货（is_return 的入库）冲减。
+   姓名与商品名都走模糊匹配，商品按名称 / 编码命中。
+   ============================================================ */
+
+function dupProductText(p) {
+  if (!p) return '（商品已删除）';
+  return [p.name, p.code].filter(Boolean).join(' ');
+}
+
+async function searchDup() {
+  const buyer = $('dupBuyerInput').value.trim();
+  const productKw = $('dupProductInput').value.trim();
+  const box = $('dupResult');
+
+  if (!buyer) {
+    toast('请先填写客户姓名');
+    $('dupBuyerInput').focus();
+    return;
+  }
+
+  box.innerHTML = '<p class="empty">查询中…</p>';
+  try {
+    /* 姓名交给服务端模糊匹配，商品名在本地过一遍（商品是关联对象，不能直接按名字过滤） */
+    const { data, error } = await cloud.database
+      .from('stock_moves')
+      .select('*, product:products(id, name, code)')
+      .ilike('buyer_name', '%' + buyer + '%')
+      .order('created_at', { ascending: false })
+      .limit(1000);
+
+    if (error) {
+      box.innerHTML = '<p class="empty">' + esc(describeDbError(error)) + '</p>';
+      return;
+    }
+    renderDupResult(Array.isArray(data) ? data : [], buyer, productKw);
+  } catch (err) {
+    box.innerHTML = '<p class="empty">查询失败（' + esc((err && err.message) || '请重试') + '）</p>';
+  }
+}
+
+function renderDupResult(rows, buyerKw, productKw) {
+  const box = $('dupResult');
+  const kw = productKw.toLowerCase();
+
+  /* 只留销售相关记录：出库，以及为本单退货的入库（普通补货入库不算购买）；再按商品名/编码过滤 */
+  const sales = rows.filter((m) => {
+    if (m.move_type !== 'out' && !m.is_return) return false;
+    if (!kw) return true;
+    return dupProductText(m.product).toLowerCase().indexOf(kw) >= 0;
+  });
+
+  if (sales.length === 0) {
+    box.innerHTML = '<div class="dup-verdict is-miss">' +
+        '<span class="dup-title is-miss">没有买过</span>' +
+        '<span class="dup-sub">客户「' + esc(buyerKw) + '」' +
+          (productKw ? '购买「' + esc(productKw) + '」' : '') + '的记录：0 条</span>' +
+      '</div>' +
+      '<p class="hint">换个关键词试试：客户姓名要和小程序 / 网页里登记的<b>购买者</b>一致，商品名支持部分匹配。</p>';
+    return;
+  }
+
+  /* 按订单聚合：同一订单里同一商品的多笔出库合并，退货冲减 */
+  const byOrder = new Map();
+  sales.forEach((m) => {
+    const no = String(m.order_no == null ? '' : m.order_no);
+    if (!no) return;
+    let o = byOrder.get(no);
+    if (!o) {
+      o = { no, at: m.created_at, qty: 0, amountUsd: 0, names: new Map() };
+      byOrder.set(no, o);
+    }
+    const qty = Number(m.quantity) || 0;
+    const price = Number(m.unit_price) || 0;
+    const sign = m.move_type === 'out' ? 1 : -1;
+    o.qty += qty * sign;
+    o.amountUsd += qty * price * sign;
+    const name = dupProductText(m.product);
+    o.names.set(name, (o.names.get(name) || 0) + qty * sign);
+    const t = new Date(m.created_at).getTime();
+    if (Number.isFinite(t) && t > new Date(o.at).getTime()) o.at = m.created_at;
+  });
+
+  const orders = Array.from(byOrder.values())
+    .filter((o) => o.qty > 0)
+    .sort((a, b) => new Date(b.at) - new Date(a.at));
+
+  if (orders.length === 0) {
+    box.innerHTML = '<div class="dup-verdict is-miss">' +
+        '<span class="dup-title is-miss">没有买过</span>' +
+        '<span class="dup-sub">客户「' + esc(buyerKw) + '」的记录已全部退回库存，净购买 0 件</span>' +
+      '</div>';
+    return;
+  }
+
+  const totalQty = orders.reduce((s, o) => s + o.qty, 0);
+  const totalUsd = orders.reduce((s, o) => s + o.amountUsd, 0);
+  const lastAt = orders[0].at;
+
+  const head = '<div class="dup-verdict is-hit">' +
+      '<span class="dup-title is-hit">买过</span>' +
+      '<span class="dup-sub">客户「' + esc(buyerKw) + '」' +
+        (productKw ? '购买「' + esc(productKw) + '」' : '共购买') +
+        '：<b>' + orders.length + '</b> 单 · <b>' + totalQty + '</b> 件 · <b>' +
+        fmtUsd(totalUsd) + '</b>（≈ ' + fmtMoney(totalUsd * rateOf()) + '）' +
+        '，最近一次 ' + esc(fmtTime(lastAt)) + '</span>' +
+    '</div>';
+
+  const list = orders.map((o) => {
+    const items = Array.from(o.names.entries()).filter((e) => e[1] > 0)
+      .map((e) => esc(e[0]) + ' ×' + e[1]).join('、');
+    return '<div class="dup-row">' +
+        '<div class="dup-row-main">' +
+          '<div class="dup-order">' + esc(o.no) + '</div>' +
+          '<div class="dup-meta">' + esc(fmtTime(o.at)) + ' · ' + items + '</div>' +
+        '</div>' +
+        '<div class="dup-amount">' +
+          '<div class="dup-qty">' + o.qty + ' 件</div>' +
+          '<div class="dup-meta">' + fmtUsd(o.amountUsd) + '</div>' +
+        '</div>' +
+      '</div>';
+  }).join('');
+
+  box.innerHTML = head + '<div class="dup-list">' + list + '</div>';
+}
+
+function clearDup() {
+  $('dupBuyerInput').value = '';
+  $('dupProductInput').value = '';
+  $('dupResult').innerHTML = '<p class="empty">填写客户姓名后点「查询」</p>';
+  $('dupBuyerInput').focus();
+}
+
 /* ================= 统计报表 =================
    口径：只统计出库流水（move_type = 'out'）
    销售额 = 出库数量 × 成交单价（流水里存的 unit_price）
@@ -2964,9 +3097,17 @@ function bindEvents() {
   });
   $('clearMoveFilterBtn').addEventListener('click', clearMoveFilter);
 
+  // 查重：客户姓名 + 商品名 → 是否买过
+  $('dupSearchBtn').addEventListener('click', searchDup);
+  $('dupClearBtn').addEventListener('click', clearDup);
+  ['dupBuyerInput', 'dupProductInput'].forEach((id) => {
+    $(id).addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); searchDup(); }
+    });
+  });
+
   // 订单管理：左侧列表选订单 → 右侧看明细与成本利润
-  $('orderSearchInput').addEventListener('input', renderOrders);
-  $('orderSortSelect').addEventListener('change', () => {
+  $('orderSearchInput').addEventListener('input', renderOrders);  $('orderSortSelect').addEventListener('change', () => {
     ordersSort = $('orderSortSelect').value || 'time';
     renderOrders();
   });

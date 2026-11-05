@@ -54,6 +54,7 @@
     <button class="tab" data-tab="inventory" type="button">库存</button>
     <button class="tab" data-tab="moves" type="button">出入库流水</button>
     <button class="tab" data-tab="orders" type="button">订单管理</button>
+    <button class="tab" data-tab="dup" type="button">查重</button>
     <button class="tab" data-tab="report" type="button">统计报表</button>
   </nav>
 
@@ -194,6 +195,22 @@
           净利润 = 订单金额 − 商品成本 − 其他成本。<br>
           退回库存的商品会冲减本单金额、成本与利润（订单按实际成交部分结算）。
         </p>
+      </div>
+    </section>
+
+    <section id="panel-dup" class="panel hidden">
+      <div class="card">
+        <div class="toolbar">
+          <input id="dupBuyerInput" type="text" placeholder="客户姓名（必填，支持部分匹配）">
+          <input id="dupProductInput" type="text" placeholder="商品名称（支持部分匹配，留空查该客户全部购买）">
+          <button id="dupSearchBtn" type="button" class="primary">查询</button>
+          <button id="dupClearBtn" type="button" class="ghost">清空</button>
+        </div>
+        <p class="hint" style="margin:0 0 14px">
+          查重口径：只统计<b>出库（卖出）</b>记录，退回库存的部分已扣减；客户姓名按流水里登记的购买者匹配，
+          商品名称支持模糊搜索（名称或编码）。同一订单多件会合并成一行。
+        </p>
+        <div id="dupResult"><p class="empty">填写客户姓名后点「查询」</p></div>
       </div>
     </section>
 

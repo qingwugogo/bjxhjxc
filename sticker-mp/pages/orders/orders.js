@@ -172,6 +172,11 @@ Page({
     wx.showToast({ title: '已刷新', icon: 'none' });
   },
 
+  /* 查重：进入「购买查重」页，按客户姓名 + 商品名查是否买过 */
+  openDup() {
+    wx.navigateTo({ url: '/pages/dup/dup' });
+  },
+
   openDetail(e) {
     const no = e.currentTarget.dataset.no;
     if (!no) return;

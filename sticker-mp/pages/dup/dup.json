@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "app-bar": "/components/app-bar/app-bar"
+  },
+  "backgroundTextStyle": "dark"
+}

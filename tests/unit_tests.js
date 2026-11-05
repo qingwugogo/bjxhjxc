@@ -256,6 +256,42 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps == null ? 0.005 : eps);
     t(stockDeltaForMove({ move_type: 'out', quantity: '3' }) === 3 &&
       stockDeltaForMove({ move_type: 'out', quantity: null }) === 0,
       'U10.4 数量字符串可解析，缺失归 0（回补不抛异常）');
+    /* ================= U11 查重：客户 × 商品 ================= */
+    usdCnyRate = 7.2;
+    const dupRows = [
+      // TK001：同一单里同一商品两笔，应合并成 3 件
+      { order_no: 'TK001', move_type: 'out', quantity: 2, unit_price: 5, created_at: '2026-10-20T02:00:00Z', product: { name: '星空贴纸', code: 'SP1' } },
+      { order_no: 'TK001', move_type: 'out', quantity: 1, unit_price: 5, created_at: '2026-10-20T02:00:00Z', product: { name: '星空贴纸', code: 'SP1' } },
+      // TK002：出库 3 件后退回 1 件，净 2 件
+      { order_no: 'TK002', move_type: 'out', quantity: 3, unit_price: 4, created_at: '2026-10-21T03:00:00Z', product: { name: '星空贴纸', code: 'SP1' } },
+      { order_no: 'TK002', move_type: 'in', quantity: 1, unit_price: 4, is_return: true, created_at: '2026-10-22T03:00:00Z', product: { name: '星空贴纸', code: 'SP1' } },
+      // TK003：别的商品，不应被「星空」命中
+      { order_no: 'TK003', move_type: 'out', quantity: 1, unit_price: 9, created_at: '2026-10-23T03:00:00Z', product: { name: '猫咪贴纸', code: 'SP2' } },
+      // TK004：普通补货入库，不属于购买
+      { order_no: 'TK004', move_type: 'in', quantity: 10, unit_price: 2, created_at: '2026-10-24T03:00:00Z', product: { name: '星空贴纸', code: 'SP1' } },
+    ];
+    renderDupResult(dupRows, '张三', '星空');
+    const dupHtml = $('dupResult').textContent;
+    t(dupHtml.indexOf('买过') >= 0 && dupHtml.indexOf('2 单') >= 0 && dupHtml.indexOf('5 件') >= 0,
+      'U11.1 命中：2 单 / 5 件（TK001 合并 3 件 + TK002 退货后净 2 件）');
+    t(dupHtml.indexOf('$23.00') >= 0, 'U11.2 金额 $23.00（15 + 8，退货按原价冲减）');
+    t(dupHtml.indexOf('TK003') < 0, 'U11.3 商品名不匹配的订单不进结果（猫咪贴纸）');
+    t(dupHtml.indexOf('10 件') < 0, 'U11.4 普通补货入库不算购买');
+    renderDupResult(dupRows, '张三', 'SP2');
+    t($('dupResult').textContent.indexOf('TK003') >= 0,
+      'U11.5 商品编码也能命中（SP2 → 猫咪贴纸）');
+    renderDupResult(dupRows, '张三', '');
+    const dupAll = $('dupResult').textContent;
+    t(dupAll.indexOf('3 单') >= 0 && dupAll.indexOf('6 件') >= 0,
+      'U11.6 商品名留空查该客户全部购买：3 单 / 6 件');
+    renderDupResult(dupRows, '张三', '不存在的商品');
+    const dupMiss = $('dupResult').textContent;
+    t(dupMiss.indexOf('没有买过') >= 0 && dupMiss.indexOf('0 条') >= 0,
+      'U11.7 没买过时给出「没有买过」结论');
+    renderDupResult([], '李四', '');
+    t($('dupResult').textContent.indexOf('没有买过') >= 0,
+      'U11.8 完全没有记录的客户同样判「没有买过」，不报错');
+
     return { ok, bad };
   });
 

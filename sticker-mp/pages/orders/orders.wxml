@@ -23,6 +23,7 @@
             <text class="arrow">▾</text>
           </view>
         </picker>
+        <button class="btn btn-ghost btn-sm" style="margin-left:12rpx" bindtap="openDup">查重</button>
         <button class="btn btn-ghost btn-sm" style="margin-left:12rpx" bindtap="refresh">刷新</button>
       </view>
 

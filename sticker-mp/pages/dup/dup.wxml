@@ -1,0 +1,52 @@
+<view class="wrap">
+  <app-bar title="购买查重" subtitle="按客户 + 商品查是否买过" rate="{{rateText}}" bind:ratechange="onRateChange" />
+
+  <view class="boot" wx:if="{{loginError}}">
+    <view class="boot-title">{{loggedOut ? '已退出登录' : '没能登录成功'}}</view>
+    <view class="boot-text">{{loginError}}</view>
+    <button class="btn btn-primary" style="margin-top:28rpx" bindtap="retry">{{loggedOut ? '微信一键登录' : '重试'}}</button>
+  </view>
+
+  <view class="boot" wx:elif="{{!ready}}">
+    <view class="spinner"></view>
+    <view class="boot-text">正在登录…</view>
+  </view>
+
+  <block wx:else>
+    <view class="card">
+      <input class="input" placeholder="客户姓名（必填，支持部分匹配）" value="{{buyer}}" bindinput="onBuyerInput" confirm-type="search" bindconfirm="search" />
+      <input class="input" style="margin-top:12rpx" placeholder="商品名称（留空则查该客户全部购买）" value="{{product}}" bindinput="onProductInput" confirm-type="search" bindconfirm="search" />
+
+      <view class="row toolbar-row">
+        <button class="btn btn-primary flex1" bindtap="search" loading="{{loading}}">查询</button>
+        <button class="btn btn-ghost" style="margin-left:12rpx" bindtap="clear">清空</button>
+      </view>
+
+      <view class="hint">只统计出库（卖出）记录，退回库存的部分已扣减；客户姓名按流水里登记的购买者匹配。</view>
+    </view>
+
+    <view class="card" wx:if="{{searched}}">
+      <view class="dup-verdict {{verdict.hit ? 'is-hit' : 'is-miss'}}">
+        <text class="dup-title {{verdict.hit ? 'is-hit' : 'is-miss'}}">{{verdict.title}}</text>
+        <text class="dup-sub">{{verdict.sub}}</text>
+      </view>
+
+      <block wx:if="{{rows.length > 0}}">
+        <view class="dup-row" wx:for="{{rows}}" wx:key="no" data-no="{{item.no}}" bindtap="openOrder">
+          <view class="dup-row-main">
+            <view class="dup-order">{{item.no}}</view>
+            <view class="dup-meta">{{item.timeText}} · {{item.itemsText}}</view>
+          </view>
+          <view class="dup-amount">
+            <view class="dup-qty">{{item.qty}} 件</view>
+            <view class="dup-meta">{{item.amountText}}</view>
+          </view>
+        </view>
+        <view class="hint" style="margin-top:16rpx">点任意一行可打开该订单详情。</view>
+      </block>
+      <view class="hint" wx:elif="{{!verdict.hit && verdict.title === '没有买过'}}">
+        换个关键词试试：客户姓名要和小程序里登记的购买者一致，商品名支持部分匹配。
+      </view>
+    </view>
+  </block>
+</view>

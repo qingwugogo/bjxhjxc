@@ -213,6 +213,21 @@ async function listAllOrderMoves(limit) {
     .limit(limit || 2000);
 }
 
+/* 查重：按购买者姓名（模糊）拉取销售相关流水，商品名在页面里再过滤。
+   只取销售相关记录：出库 + 退货入库，普通补货入库不算购买 */
+async function findPurchases(buyerName) {
+  const res = await cloud.database
+    .from('stock_moves')
+    .select(MOVE_COLS)
+    .ilike('buyer_name', '%' + buyerName + '%')
+    .order('created_at', { ascending: false })
+    .limit(1000);
+  if (res.error) return { error: res.error };
+  const rows = (Array.isArray(res.data) ? res.data : [])
+    .filter((m) => m.move_type === 'out' || m.is_return);
+  return { data: rows };
+}
+
 /* ---------- 其他成本 / 发货 ---------- */
 
 async function listOrderCosts() {
@@ -399,6 +414,7 @@ module.exports = {
   listMoves,
   listOrderMoves,
   listAllOrderMoves,
+  findPurchases,
   listOrderCosts,
   saveOrderCost,
   listShipments,

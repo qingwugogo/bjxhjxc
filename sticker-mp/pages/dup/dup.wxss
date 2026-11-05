@@ -1,0 +1,84 @@
+.toolbar-row {
+  margin-top: 16rpx;
+}
+
+/* 查重结论 */
+.dup-verdict {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  padding: 20rpx 22rpx;
+  border-radius: 16rpx;
+  border: 1rpx solid #eef0f4;
+  background: #f8fafc;
+  margin-bottom: 18rpx;
+}
+
+.dup-verdict.is-hit {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.dup-verdict.is-miss {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+.dup-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #374151;
+}
+
+.dup-title.is-hit { color: #15803d; }
+.dup-title.is-miss { color: #b45309; }
+
+.dup-sub {
+  font-size: 24rpx;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+/* 命中明细：一单一行 */
+.dup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 18rpx 20rpx;
+  border: 1rpx solid #eef0f4;
+  border-radius: 16rpx;
+  margin-bottom: 12rpx;
+  background: #ffffff;
+}
+
+.dup-row-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.dup-order {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #111827;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  word-break: break-all;
+}
+
+.dup-meta {
+  font-size: 22rpx;
+  color: #9ca3af;
+  line-height: 1.55;
+  margin-top: 4rpx;
+}
+
+.dup-amount {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.dup-qty {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #111827;
+}

@@ -1053,3 +1053,45 @@ button.blue.urge:hover:not(:disabled) {
   .orders-layout { grid-template-columns: 1fr; gap: 12px; }
   .orders-list { max-height: 46vh; }
 }
+
+/* ---------- 查重页 ---------- */
+.dup-verdict {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  margin-bottom: 14px;
+}
+.dup-verdict.is-hit { background: #f0fdf4; border-color: #bbf7d0; }
+.dup-verdict.is-miss { background: #fff7ed; border-color: #fed7aa; }
+.dup-title { font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+.dup-title.is-hit { color: #15803d; }
+.dup-title.is-miss { color: #b45309; }
+.dup-sub { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+.dup-sub b { color: var(--text); }
+.dup-list { display: flex; flex-direction: column; gap: 10px; }
+.dup-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  background: #fff;
+}
+.dup-row-main { min-width: 0; }
+.dup-order {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13.5px;
+  font-weight: 600;
+  word-break: break-all;
+}
+.dup-meta { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.55; }
+.dup-amount { text-align: right; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.dup-qty { font-size: 14px; font-weight: 650; }

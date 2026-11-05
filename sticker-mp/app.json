@@ -4,6 +4,7 @@
     "pages/inventory/inventory",
     "pages/moves/moves",
     "pages/orders/orders",
+    "pages/dup/dup",
     "pages/report/report",
     "pages/order-detail/order-detail"
   ],
