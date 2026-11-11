@@ -65,3 +65,34 @@
 .item.is-archived {
   opacity: 0.72;
 }
+
+/* 分页条：上一页 / 第 x-y 共 n 款 / 下一页 */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24rpx;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #eef0f4;
+}
+
+.pager-btn {
+  min-width: 150rpx;
+}
+
+.pager-mid {
+  flex: 1;
+  text-align: center;
+}
+
+.pager-no {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #111827;
+}
+
+.pager-range {
+  font-size: 22rpx;
+  color: #9ca3af;
+  margin-top: 4rpx;
+}

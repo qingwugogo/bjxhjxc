@@ -62,6 +62,7 @@
 
       <view class="filter-count" wx:if="{{countText}}">{{countText}}</view>
 
+      <view id="list-top"></view>
       <view wx:if="{{loading}}" class="empty">加载中…</view>
       <view wx:elif="{{list.length === 0}}" class="empty">{{emptyText}}</view>
 
@@ -106,6 +107,15 @@
           <button class="btn btn-primary btn-sm" data-id="{{item.id}}" bindtap="restoreProduct">恢复上架</button>
           <button class="btn btn-ghost btn-sm" data-id="{{item.id}}" bindtap="openEdit">编辑</button>
         </view>
+      </view>
+
+      <view class="pager" wx:if="{{pageCount > 1}}">
+        <button class="btn btn-ghost btn-sm pager-btn" bindtap="prevPage" disabled="{{page <= 1}}">上一页</button>
+        <view class="pager-mid">
+          <view class="pager-no">{{page}} / {{pageCount}}</view>
+          <view class="pager-range">{{pageFrom}}-{{pageTo}} / 共 {{totalRows}} 款</view>
+        </view>
+        <button class="btn btn-ghost btn-sm pager-btn" bindtap="nextPage" disabled="{{page >= pageCount}}">下一页</button>
       </view>
     </view>
   </block>

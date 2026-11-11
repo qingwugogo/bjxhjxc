@@ -5,6 +5,7 @@ const { describeDbError } = require('../../utils/errors');
 const { ALL_BRANDS, brandKeyOf, buildBrandStats } = require('../../utils/stats');
 
 const LOW_STOCK_AT = 5;
+const PAGE_SIZE = 20;
 
 function inventoryEmptyText(allCount, keyword, archivedView) {
   if (allCount === 0) return '还没有商品，先去「建档」录一个';
@@ -28,6 +29,11 @@ Page({
     archivedCount: 0,
     list: [],
     countText: '',
+    page: 1,
+    pageCount: 1,
+    totalRows: 0,
+    pageFrom: 0,
+    pageTo: 0,
     orderNo: '',
     buyerName: '',
     activeOrder: null,
@@ -222,7 +228,7 @@ Page({
     }
   },
 
-  render() {
+  render(resetPage) {
     const { products, brandKey, keyword, archivedView } = this.data;
     const kw = String(keyword || '').trim().toLowerCase();
     const rows = products.filter((p) => {
@@ -233,8 +239,17 @@ Page({
         .some((v) => String(v == null ? '' : v).toLowerCase().indexOf(kw) >= 0);
     });
 
+    /* 分页：每页 20 款。筛选条件变化时回到第 1 页，刷新数据时尽量留在当前页 */
+    const totalRows = rows.length;
+    const pageCount = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+    let page = resetPage ? 1 : (Number(this.data.page) || 1);
+    if (page > pageCount) page = pageCount;
+    if (page < 1) page = 1;
+    const start = (page - 1) * PAGE_SIZE;
+    const pageRows = rows.slice(start, start + PAGE_SIZE);
+
     const map = this.photoMap || {};
-    const list = rows.map((p) => {
+    const list = pageRows.map((p) => {
       const stock = Number(p.stock) || 0;
       let badgeText = '';
       let badgeCls = '';
@@ -276,15 +291,49 @@ Page({
     const archived = this.data.archivedCount;
     let countText = total === 0
       ? ''
-      : (filtered ? '筛选出 ' + list.length + ' 款 / 共 ' + total + ' 款商品' : '共 ' + total + ' 款商品');
+      : (filtered ? '筛选出 ' + totalRows + ' 款 / 共 ' + total + ' 款商品' : '共 ' + total + ' 款商品');
     if (!archivedView && archived > 0) countText += ' · 另有 ' + archived + ' 款已归档';
 
     this.setData({
       list,
       countText,
+      page,
+      pageCount,
+      totalRows,
+      pageFrom: totalRows ? start + 1 : 0,
+      pageTo: start + list.length,
       emptyText: inventoryEmptyText(total, kw, archivedView),
-      photoUrls: list.map((x) => x.thumb).filter(Boolean),
+      photoUrls: rows.map((p) => map[p.image_path]).filter(Boolean),
     });
+  },
+
+  /* 翻页：滚动回列表顶部，避免停在上一页的中间位置 */
+  goPage(delta) {
+    const target = (Number(this.data.page) || 1) + delta;
+    const pageCount = Number(this.data.pageCount) || 1;
+    if (target < 1 || target > pageCount || target === this.data.page) return;
+    this.setData({ page: target });
+    this.render();
+    wx.createSelectorQuery()
+      .select('#list-top')
+      .boundingClientRect()
+      .selectViewport()
+      .scrollOffset()
+      .exec((res) => {
+        const rect = res && res[0];
+        const scroll = res && res[1];
+        if (!rect || !scroll) return;
+        const top = Math.max(0, scroll.scrollTop + rect.top - 8);
+        wx.pageScrollTo({ scrollTop: top, duration: 0 });
+      });
+  },
+
+  prevPage() {
+    this.goPage(-1);
+  },
+
+  nextPage() {
+    this.goPage(1);
   },
 
   /* 在售 / 已归档 视图切换 */
@@ -292,19 +341,19 @@ Page({
     const to = String(e.currentTarget.dataset.archived) === '1';
     if (to === this.data.archivedView) return;
     this.setData({ archivedView: to, brandKey: ALL_BRANDS });
-    this.render();
+    this.render(true);
   },
 
   onSearch(e) {
     this.setData({ keyword: e.detail.value });
-    this.render();
+    this.render(true);
   },
 
   selectBrand(e) {
     const key = e.currentTarget.dataset.key;
     if (key === this.data.brandKey) return;
     this.setData({ brandKey: key });
-    this.render();
+    this.render(true);
   },
 
   refresh() {
