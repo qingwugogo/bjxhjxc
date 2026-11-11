@@ -212,17 +212,8 @@ Page({
         loading: false,
         archivedCount: products.filter((p) => !!p.archived).length,
       });
+      /* 缩略图由 render() 只签当前页可见的 20 张，失败就不显示图，不影响列表 */
       this.render();
-
-      /* 缩略图：批量换签名地址，失败就不显示图，不影响列表 */
-      const paths = products.map((p) => p.image_path).filter(Boolean);
-      if (paths.length) {
-        const map = await db.signPhotoUrls(paths);
-        this.photoMap = map;
-        this.render();
-      } else {
-        this.photoMap = {};
-      }
     } catch (err) {
       this.setData({ loading: false, list: [], countText: '加载失败，请重试' });
     }
@@ -303,8 +294,35 @@ Page({
       pageFrom: totalRows ? start + 1 : 0,
       pageTo: start + list.length,
       emptyText: inventoryEmptyText(total, kw, archivedView),
-      photoUrls: rows.map((p) => map[p.image_path]).filter(Boolean),
+      photoUrls: list.map((x) => x.thumb).filter(Boolean),
     });
+
+    /* 缩略图只签当前页这 20 张，签完回填，不整页重绘 */
+    this.fillThumbs(pageRows);
+  },
+
+  /* 给当前页补签名地址：缓存在 this.photoMap，45 分钟后视为过期重签 */
+  async fillThumbs(rows) {
+    const stale = this.photoMapAt && Date.now() - this.photoMapAt > 45 * 60 * 1000;
+    if (!this.photoMap || stale) { this.photoMap = {}; this.photoMapAt = 0; }
+    const map = this.photoMap;
+    const need = [];
+    rows.forEach((p) => {
+      const key = p.image_path;
+      if (key && !map[key] && need.indexOf(key) < 0) need.push(key);
+    });
+    if (!need.length) return;
+    const fresh = await db.signPhotoUrls(need);
+    Object.assign(map, fresh);
+    this.photoMapAt = Date.now();
+
+    let changed = false;
+    const next = (this.data.list || []).map((x) => {
+      const url = map[x.photo];
+      if (url && url !== x.thumb) { changed = true; return Object.assign({}, x, { thumb: url }); }
+      return x;
+    });
+    if (changed) this.setData({ list: next, photoUrls: next.map((x) => x.thumb).filter(Boolean) });
   },
 
   /* 翻页：滚动回列表顶部，避免停在上一页的中间位置 */

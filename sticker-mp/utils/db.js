@@ -382,19 +382,31 @@ async function migrateLegacyPhotos(products) {
   return moved;
 }
 
-/* 批量取缩略图签名地址：path -> url */async function signPhotoUrls(paths) {
-  const list = (paths || []).filter(Boolean);
+/* 批量取缩略图签名地址：path -> url
+   注意：签名接口单次最多 500 个路径（超过直接 400 paths must not exceed 500 items per request），
+   商品数破 500 后一次性签名会整体失败、整页无图，所以这里按 200 一批分片请求。 */
+const SIGN_BATCH = 200;
+
+async function signPhotoUrls(paths) {
+  const list = Array.from(new Set((paths || []).filter(Boolean)));
   const map = {};
   if (list.length === 0) return map;
-  try {
-    const res = await cloud.storage.createSignedUrls(list, 3600);
-    if (res.error || !res.data) return map;
-    (Array.isArray(res.data) ? res.data : []).forEach((item) => {
-      const url = item.signedUrl || item.signedURL || item.url;
-      const key = item.path || item.pathname;
-      if (key && url) map[key] = url;
-    });
-  } catch (e) { /* 缩略图失败不影响主流程 */ }
+
+  for (let i = 0; i < list.length; i += SIGN_BATCH) {
+    const chunk = list.slice(i, i + SIGN_BATCH);
+    try {
+      const res = await cloud.storage.createSignedUrls(chunk, 3600);
+      if (res.error || !res.data) {
+        console.warn('[sticker] 签名失败', chunk.length, res.error && JSON.stringify(res.error));
+        continue;
+      }
+      (Array.isArray(res.data) ? res.data : []).forEach((item) => {
+        const url = item.signedUrl || item.signedURL || item.url;
+        const key = item.path || item.pathname;
+        if (key && url) map[key] = url;
+      });
+    } catch (e) { /* 单批失败不影响其它批次，缩略图失败不影响主流程 */ }
+  }
   return map;
 }
 
