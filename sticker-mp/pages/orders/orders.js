@@ -4,7 +4,9 @@ const { fmtMoney, fmtRange } = require('../../utils/format');
 const { describeDbError } = require('../../utils/errors');
 const { buildOrderStats } = require('../../utils/stats');
 
-const ORDERS_LIMIT = 2000;
+/* 传给 db.listAllOrderMoves 的是「每页条数」，不是总条数上限；
+   网关单次最多 1000 条，db 层会分页把全量流水取完。 */
+const ORDERS_PAGE_SIZE = 1000;
 
 Page({
   data: {
@@ -68,7 +70,7 @@ Page({
     this.setData({ loading: true });
     try {
       const costsPromise = db.listOrderCosts();
-      const { data, error } = await db.listAllOrderMoves(ORDERS_LIMIT);
+      const { data, error } = await db.listAllOrderMoves(ORDERS_PAGE_SIZE);
       if (error) {
         this.setData({ loading: false, list: [], countText: describeDbError(error) });
         return;

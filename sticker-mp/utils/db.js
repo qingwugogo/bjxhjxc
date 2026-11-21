@@ -7,6 +7,33 @@ const { pad2 } = require('./format');
 
 const MOVE_COLS = '*, product:products(id, name, code, cost_price)';
 
+/* 网关单次查询有 1000 条硬上限：.limit(2000) 实际也只回 1000 条，
+   而且按 created_at 升序时拿到的是「最早」1000 条，之后的新数据会被静默丢掉
+   （2026-11-21 订单页看不到当天两个新订单就是这个原因）。
+   所有需要「全量」的查询统一走这里，按 1000 条一页用 .range() 循环取完。
+   makeQuery 必须是工厂函数：每次返回全新的 query builder，避免 order 累积。 */
+const QUERY_PAGE_SIZE = 1000;
+const QUERY_MAX_PAGES = 50;
+
+async function fetchAllPages(makeQuery, pageSize) {
+  const size = Math.max(1, Math.min(Number(pageSize) || QUERY_PAGE_SIZE, QUERY_PAGE_SIZE));
+  const all = [];
+  for (let page = 0; page < QUERY_MAX_PAGES; page++) {
+    const from = page * size;
+    let res;
+    try {
+      res = await makeQuery().range(from, from + size - 1);
+    } catch (e) {
+      return { data: all, error: e };
+    }
+    if (res && res.error) return { data: all, error: res.error };
+    const rows = res && Array.isArray(res.data) ? res.data : [];
+    for (let i = 0; i < rows.length; i++) all.push(rows[i]);
+    if (rows.length < size) return { data: all, error: null };
+  }
+  return { data: all, error: { message: '数据量超出上限，请缩小查询范围' } };
+}
+
 async function currentUserId() {
   try {
     const { data: session } = await cloud.auth.getSession();
@@ -19,7 +46,11 @@ async function currentUserId() {
 /* ---------- 商品 ---------- */
 
 async function listProducts() {
-  return cloud.database.from('products').select('*').order('created_at', { ascending: false });
+  /* 商品数会一直涨，不能依赖默认 1000 条；id 二级排序保证分页边界稳定 */
+  return fetchAllPages(() => cloud.database.from('products')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false }));
 }
 
 /* 生成产品编码：SP + 年月日 + 3 位当日序号
@@ -204,24 +235,26 @@ async function listOrderMoves(keyword, options) {
   return q.order('created_at', { ascending: opts.ascending !== false }).limit(opts.limit || 1000);
 }
 
-/* 订单管理页：一次拉全量（含商品进价）用于聚合 */
+/* 订单管理页：拉全量（含商品进价）用于聚合。
+   limit 形参保留兼容调用方，现在作为「每页条数」（上限 1000），不再是总条数上限——
+   流水超过 1000 条后必须分页取完，否则升序时新订单全被截掉。 */
 async function listAllOrderMoves(limit) {
-  return cloud.database
+  return fetchAllPages(() => cloud.database
     .from('stock_moves')
     .select(MOVE_COLS)
     .order('created_at', { ascending: true })
-    .limit(limit || 2000);
+    .order('id', { ascending: true }), limit);
 }
 
 /* 查重：按购买者姓名（模糊）拉取销售相关流水，商品名在页面里再过滤。
    只取销售相关记录：出库 + 退货入库，普通补货入库不算购买 */
 async function findPurchases(buyerName) {
-  const res = await cloud.database
+  const res = await fetchAllPages(() => cloud.database
     .from('stock_moves')
     .select(MOVE_COLS)
     .ilike('buyer_name', '%' + buyerName + '%')
     .order('created_at', { ascending: false })
-    .limit(1000);
+    .order('id', { ascending: false }));
   if (res.error) return { error: res.error };
   const rows = (Array.isArray(res.data) ? res.data : [])
     .filter((m) => m.move_type === 'out' || m.is_return);
@@ -231,7 +264,7 @@ async function findPurchases(buyerName) {
 /* ---------- 其他成本 / 发货 ---------- */
 
 async function listOrderCosts() {
-  const res = await cloud.database.from('order_costs').select('*').limit(1000);
+  const res = await fetchAllPages(() => cloud.database.from('order_costs').select('*'));
   const map = new Map();
   if (!res.error && Array.isArray(res.data)) {
     res.data.forEach((r) => {
@@ -265,7 +298,7 @@ async function saveOrderCost(orderNo, otherCost, costNote) {
 }
 
 async function listShipments() {
-  const res = await cloud.database.from('order_shipments').select('*').limit(2000);
+  const res = await fetchAllPages(() => cloud.database.from('order_shipments').select('*'));
   const map = new Map();
   if (!res.error && Array.isArray(res.data)) {
     res.data.forEach((s) => map.set(String(s.order_no), s));
