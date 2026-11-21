@@ -46,7 +46,6 @@ Page({
     recognizing: false,
     recognizeStatus: '',
     recognizeStatusType: '',
-    showReview: false,
     saving: false,
     saveStatus: '',
     saveStatusType: '',
@@ -144,7 +143,6 @@ Page({
       photoPath: path,
       photoType: contentType,
       hasPhoto: true,
-      showReview: false,
       recognizeStatus: '',
       recognizeStatusType: '',
       saveStatus: '',
@@ -254,7 +252,6 @@ Page({
       const data = this.parseModelJson(buffer);
       const code = this.data.form.code || await db.generateCode();
       this.setData({
-        showReview: true,
         recognizeStatus: '识别完成，请核对下方信息',
         recognizeStatusType: 'is-ok',
         saveStatus: '',
@@ -345,6 +342,7 @@ Page({
 
   async save() {
     const f = this.data.form;
+    /* 照片必选（要随商品保存），只有 AI 识别是可选步骤 */
     if (!this.data.photoPath) {
       wx.showToast({ title: '请先选择商品照片', icon: 'none' });
       return;
@@ -373,6 +371,7 @@ Page({
         console.error('[create] uploadPhoto failed', up.error);
         throw new Error('照片上传失败：' + describeStorageError(up.error));
       }
+      const imagePath = up.data.path;
 
       const stock = Math.max(0, Math.round(toNum(f.stock)));
       const payload = {
@@ -385,7 +384,7 @@ Page({
         standard: trimOrNull(f.standard),
         purchase_channel: trimOrNull(f.channel),
         supplier_name: trimOrNull(f.supplier),
-        image_path: up.data.path,
+        image_path: imagePath,
         cost_price: toNum(rawCost),
         sale_price: toNum(rawSale),
         stock,
@@ -437,7 +436,6 @@ Page({
       photoPath: '',
       photoType: 'image/jpeg',
       hasPhoto: false,
-      showReview: false,
       recognizeStatus: '',
       recognizeStatusType: '',
       saveStatus: '',

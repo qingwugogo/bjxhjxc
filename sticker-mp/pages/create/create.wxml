@@ -20,14 +20,14 @@
 
   <block wx:else>
     <view class="card">
-      <view class="card-title">拍照建档</view>
-      <view class="hint">拍摄或选择一张商品照片，自动识别名称、品牌、产地、材质、规格、执行标准；识别结果逐项核对后即可入库。</view>
+      <view class="card-title">商品建档</view>
+      <view class="hint">先拍一张商品照片（必选，会随商品一起保存）；点「开始 AI 识别」可自动提取名称、品牌等信息（可选步骤）。不识别也可以直接在下方手工填写入库。</view>
 
       <view class="upload" bindtap="choosePhoto">
         <image wx:if="{{hasPhoto}}" class="upload-img" src="{{photoPath}}" mode="aspectFill" />
         <view wx:else class="upload-empty">
           <view class="cam"></view>
-          <text class="upload-tip">点击拍摄或从相册选择</text>
+          <text class="upload-tip">点击拍摄或从相册选择（必选）</text>
           <text class="upload-sub">jpg / png，单张 12MB 以内</text>
         </view>
       </view>
@@ -38,17 +38,17 @@
           bindtap="recognize"
           disabled="{{!hasPhoto || recognizing}}"
           loading="{{recognizing}}"
-        >开始 AI 识别</button>
-        <button class="btn btn-ghost" bindtap="clearPhoto">清除照片</button>
+        >开始 AI 识别（可选）</button>
+        <button class="btn btn-ghost" bindtap="clearPhoto" wx:if="{{hasPhoto}}">清除照片</button>
         <button class="btn btn-ghost" bindtap="previewPhoto" wx:if="{{hasPhoto}}">看大图</button>
       </view>
 
       <view class="status {{recognizeStatusType}}" wx:if="{{recognizeStatus}}">{{recognizeStatus}}</view>
     </view>
 
-    <view class="card" id="review" wx:if="{{showReview}}">
-      <view class="card-title">核对商品信息</view>
-      <view class="hint">AI 识别结果仅供参考，请逐项核对修改后入库。产品编码由系统自动生成、不会重复，无需填写。</view>
+    <view class="card" id="review">
+      <view class="card-title">商品信息</view>
+      <view class="hint">可手工填写，也可用上面的 AI 识别带出后逐项核对修改（两种方式都会保存商品照片）。产品编码由系统自动生成、不会重复，无需填写；进价与售价必填，其余选填。</view>
 
       <view class="grid">
         <view class="grid-cell full">
