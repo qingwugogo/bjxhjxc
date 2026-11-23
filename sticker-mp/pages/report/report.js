@@ -5,6 +5,9 @@ const { describeDbError } = require('../../utils/errors');
 const { aggregateReport, reportRangeText, reportPeriodName } = require('../../utils/stats');
 
 const REPORT_LIMIT = 3000;
+/* 60 秒内不重复拉报表数据（两次各最多 1000 行，带商品关联）。
+   别的页面改过数据（app.globalData.changedAt 更新）则无视节流强制刷新。 */
+const RELOAD_GAP = 60 * 1000;
 const COLS = 'quantity, unit_price, created_at, product_id, move_type, is_return, ' +
   'product:products(id, name, code, cost_price)';
 
@@ -41,7 +44,10 @@ Page({
   },
 
   onShow() {
-    if (this.data.ready) this.load();
+    if (!this.data.ready) return;
+    const changed = (app.globalData.changedAt || 0) > (this.lastLoadAt || 0);
+    if (!changed && this.lastLoadAt && Date.now() - this.lastLoadAt < RELOAD_GAP) return;
+    this.load();
   },
 
   onPullDownRefresh() {
@@ -174,6 +180,7 @@ Page({
       const rets = (retRes && !retRes.error && Array.isArray(retRes.data)) ? retRes.data : [];
       this.rows = outs.concat(rets);
       this.setData({ loading: false });
+      this.lastLoadAt = Date.now();
       this.render();
       if (outs.length >= REPORT_LIMIT) {
         wx.showToast({ title: '数据较多，仅统计最近 ' + REPORT_LIMIT + ' 笔', icon: 'none' });

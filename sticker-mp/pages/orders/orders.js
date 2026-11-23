@@ -7,6 +7,9 @@ const { buildOrderStats } = require('../../utils/stats');
 /* 传给 db.listAllOrderMoves 的是「每页条数」，不是总条数上限；
    网关单次最多 1000 条，db 层会分页把全量流水取完。 */
 const ORDERS_PAGE_SIZE = 1000;
+/* 60 秒内不重复拉全量流水（1172 行 + 商品关联，是最重的一次查询）。
+   别的页面改过数据（app.globalData.changedAt 更新）则无视节流强制刷新。 */
+const RELOAD_GAP = 60 * 1000;
 
 Page({
   data: {
@@ -30,8 +33,12 @@ Page({
   },
 
   onShow() {
-    /* 详情页里可能改了客户 / 退货 / 成本，回到列表要重新算 */
-    if (this.data.ready) this.loadOrders();
+    /* 详情页里可能改了客户 / 退货 / 成本，回到列表要重新算；
+       但没改过、且离上次加载不到 60 秒就不重复拉全量 */
+    if (!this.data.ready) return;
+    const changed = (app.globalData.changedAt || 0) > (this.lastLoadAt || 0);
+    if (!changed && this.lastLoadAt && Date.now() - this.lastLoadAt < RELOAD_GAP) return;
+    this.loadOrders();
   },
 
   onPullDownRefresh() {
@@ -79,6 +86,7 @@ Page({
       this.rows = (Array.isArray(data) ? data : [])
         .filter((m) => String(m.order_no == null ? '' : m.order_no).trim() !== '');
       this.setData({ loading: false });
+      this.lastLoadAt = Date.now();
       this.render();
     } catch (err) {
       this.setData({ loading: false, list: [], countText: '加载失败，请重试' });

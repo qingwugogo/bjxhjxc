@@ -29,6 +29,15 @@ const DEFAULT_INITIAL_STOCK = 1;
 /* 售价默认值 = 进价 × 0.66（进价人民币、售价美元；用户手动改过售价就不再自动覆盖） */
 const SALE_DEFAULT_RATIO = 0.66;
 
+/* 识别用模型缓存：模型列表几乎不变，每次识别都拉一遍是纯浪费（每次 1 次请求）。
+   24 小时有效，识别失败时清掉重新拉。 */
+const MODEL_CACHE_KEY = 'sticker.visionModel';
+const MODEL_CACHE_TTL = 24 * 3600 * 1000;
+
+/* 识别专用图片长边：模型看标签够用，压小能显著减少图片 token（= 资源点） */
+const RECOGNIZE_MAX_WIDTH = 1024;
+const RECOGNIZE_QUALITY = 60;
+
 function trimOrNull(v) {
   const s = String(v == null ? '' : v).trim();
   return s === '' ? null : s;
@@ -173,6 +182,16 @@ Page({
 
   async pickVisionModel() {
     if (this.activeModel) return this.activeModel;
+
+    /* 先读缓存：24 小时内直接用，省掉 models.list 请求 */
+    try {
+      const cached = wx.getStorageSync(MODEL_CACHE_KEY);
+      if (cached && cached.model && cached.model.id && cached.at && Date.now() - cached.at < MODEL_CACHE_TTL) {
+        this.activeModel = cached.model;
+        return cached.model;
+      }
+    } catch (e) { /* 缓存读不到就走网络 */ }
+
     const models = await cloud.llm.models.list();
     if (!models || models.length === 0) return null;
     const usable = models.filter((m) => m.disabled !== true && m.enabled !== false);
@@ -182,7 +201,13 @@ Page({
       || vision.find((m) => m.capabilities && m.capabilities.jsonMode === true)
       || vision[0];
     this.activeModel = picked;
+    try { wx.setStorageSync(MODEL_CACHE_KEY, { model: picked, at: Date.now() }); } catch (e) { /* 存不下就算了 */ }
     return picked;
+  },
+
+  clearModelCache() {
+    this.activeModel = null;
+    try { wx.removeStorageSync(MODEL_CACHE_KEY); } catch (e) { /* 忽略 */ }
   },
 
   parseModelJson(text) {
@@ -204,9 +229,25 @@ Page({
     };
   },
 
-  toDataUrl(path) {
-    const base64 = wx.getFileSystemManager().readFileSync(path, 'base64');
-    return 'data:image/jpeg;base64,' + base64;
+  /* 识别专用图片：在已压缩的照片上再压到长边 1024 / quality 60。
+     照片本身（this.data.photoPath）不动，上传保存的仍是 quality 80 的那张。
+     图小一半，图片 token 跟着降，识别准确度对标签文字来说够用。 */
+  prepareImageDataUrl(path) {
+    return new Promise((resolve) => {
+      wx.compressImage({
+        src: path,
+        quality: RECOGNIZE_QUALITY,
+        compressedWidth: RECOGNIZE_MAX_WIDTH,
+        success: (res) => resolve((res && res.tempFilePath) || path),
+        fail: () => resolve(path),
+      });
+    }).then((src) => {
+      try {
+        return 'data:image/jpeg;base64,' + wx.getFileSystemManager().readFileSync(src, 'base64');
+      } catch (e) {
+        return '';
+      }
+    });
   },
 
   async recognize() {
@@ -223,6 +264,12 @@ Page({
         return;
       }
 
+      const dataUrl = await this.prepareImageDataUrl(this.data.photoPath);
+      if (!dataUrl) {
+        this.setData({ recognizeStatus: '照片读取失败，请重新选择', recognizeStatusType: 'is-error' });
+        return;
+      }
+
       const params = {
         model: model.id,
         messages: [
@@ -231,7 +278,7 @@ Page({
             role: 'user',
             content: [
               { type: 'text', text: RECOGNIZE_USER },
-              { type: 'image_url', image_url: { url: this.toDataUrl(this.data.photoPath) } },
+              { type: 'image_url', image_url: { url: dataUrl } },
             ],
           },
         ],
@@ -266,6 +313,8 @@ Page({
       });
       wx.pageScrollTo({ selector: '#review', duration: 300, offsetTop: -20 });
     } catch (err) {
+      /* 失败可能是缓存的模型已下线：清掉缓存，下次重新拉一份列表 */
+      this.clearModelCache();
       this.setData({ recognizeStatus: describeLlmError(err), recognizeStatusType: 'is-error' });
     } finally {
       this.setData({ recognizing: false });
@@ -415,6 +464,8 @@ Page({
 
       const msg = '已入库：' + created.data.name + '（' + created.data.code + '）' +
         (created.codeChanged ? ' · 原编码已被占用，已自动分配新编码' : '');
+      /* 新建了商品 + 入库流水：库存 / 订单 / 报表三页下次进入必须重新拉 */
+      app.markChanged();
       await this.resetAll();
       /* 结果写在最上面「拍照建档」卡片里 —— 核对卡片这时已经被收起了 */
       this.setData({ recognizeStatus: msg, recognizeStatusType: 'is-ok' });

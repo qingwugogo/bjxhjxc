@@ -36,6 +36,9 @@ App({
     loggedOut: false,
     /* 订单页 → 流水页 的「只看该订单」传参 */
     pendingMoveFilter: '',
+    /* 任何页面改动了云端数据的时间戳：别的页面 onShow 时据此强制刷新，
+       避免为了「可能变了」而每次切 tab 都全量重拉（费资源点） */
+    changedAt: 0,
   },
 
   onLaunch() {
@@ -148,6 +151,13 @@ App({
 
   setRate(value) {
     this.globalData.rate = Number(value) || DEFAULT_USD_CNY;
+  },
+
+  /* 云端数据被改动（新增流水 / 改库存 / 改订单）时调用。
+     各页 onShow 用 `changedAt > 本页 lastLoadAt` 判断要不要强制刷新，
+     没改动且距上次加载不足 60 秒就跳过，省掉大量重复全量查询。 */
+  markChanged() {
+    this.globalData.changedAt = Date.now();
   },
 
   /* 「正在为某订单出库」的会话状态：换页面 / 杀进程都不该丢 */

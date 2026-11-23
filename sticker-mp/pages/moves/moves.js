@@ -6,6 +6,8 @@ const { buildOrderStats, orderCardView } = require('../../utils/stats');
 
 const ORDER_MOVES_LIMIT = 1000;
 const ORDER_CARDS_MAX = 20;
+/* 60 秒内不重复拉流水窗口（200 行 + 商品关联）；从订单详情跳进来时强制刷新 */
+const RELOAD_GAP = 60 * 1000;
 
 Page({
   data: {
@@ -31,11 +33,15 @@ Page({
 
   onShow() {
     if (!this.data.ready) return;
+    let force = false;
     const pending = app.globalData.pendingMoveFilter;
     if (pending) {
       app.globalData.pendingMoveFilter = '';
       this.setData({ orderFilter: pending });
+      force = true;
     }
+    const changed = (app.globalData.changedAt || 0) > (this.lastLoadAt || 0);
+    if (!force && !changed && this.lastLoadAt && Date.now() - this.lastLoadAt < RELOAD_GAP) return;
     this.loadMoves();
   },
 
@@ -86,6 +92,7 @@ Page({
       this.moves = Array.isArray(res.data) ? res.data : [];
       this.costs = await costsPromise;
       this.setData({ loading: false });
+      this.lastLoadAt = Date.now();
       this.render();
       this.scheduleSummary(this.data.orderFilter);
     } catch (err) {

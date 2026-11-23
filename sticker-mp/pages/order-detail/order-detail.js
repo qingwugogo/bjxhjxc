@@ -290,6 +290,7 @@ Page({
     this.costs.set(String(this.data.no), { other_cost: value, cost_note: note });
     this.setData({ 'dialog.show': false, 'dialog.busy': false });
     wx.showToast({ title: '已保存其他成本', icon: 'success' });
+    app.markChanged();
     this.render();
   },
 
@@ -310,6 +311,7 @@ Page({
     }
     this.setData({ 'dialog.show': false, 'dialog.busy': false });
     wx.showToast({ title: name ? '客户已改为「' + name + '」' : '已清空客户姓名', icon: 'none' });
+    app.markChanged();
     await this.loadDetail();
   },
 
@@ -331,6 +333,7 @@ Page({
     if (this.ships && res.data) this.ships.set(String(this.data.no), res.data);
     this.setData({ 'dialog.show': false, 'dialog.busy': false });
     wx.showToast({ title: cleared ? '已清除发货记录' : '发货信息已保存', icon: 'none' });
+    app.markChanged();
     this.render();
   },
 
@@ -382,6 +385,7 @@ Page({
 
     this.setData({ 'dialog.show': false, 'dialog.busy': false });
     wx.showToast({ title: '已退回 ' + qty + ' 件，金额已冲减', icon: 'success' });
+    app.markChanged();
     await this.loadDetail();
   },
 
@@ -434,6 +438,7 @@ Page({
       const d = res.data || {};
       let msg = '订单已删除';
       if (d.stockFailed > 0) msg += '，' + d.stockFailed + ' 个商品库存回补失败';
+      app.markChanged();
       wx.showToast({ title: msg, icon: d.stockFailed > 0 ? 'none' : 'success', duration: 2200 });
       setTimeout(() => wx.navigateBack({ fail: () => wx.switchTab({ url: '/pages/orders/orders' }) }), 900);
     } catch (err) {

@@ -6,6 +6,14 @@ const { ALL_BRANDS, brandKeyOf, buildBrandStats } = require('../../utils/stats')
 
 const LOW_STOCK_AT = 5;
 const PAGE_SIZE = 20;
+/* 同一页 60 秒内不重复拉全量商品：切 tab 是最频繁的动作，
+   以前每次切回来都重拉 644 款，白白消耗资源点。
+   有别的页面改过云端数据（app.globalData.changedAt 更新）则无视节流强制刷新。 */
+const RELOAD_GAP = 60 * 1000;
+/* 缩略图签名地址缓存：签名本身 3600 秒有效，留 10 分钟余量 */
+const PHOTO_CACHE_KEY = 'sticker.photoMap';
+const PHOTO_CACHE_TTL = 50 * 60 * 1000;
+const PHOTO_CACHE_MAX = 200;
 
 function inventoryEmptyText(allCount, keyword, archivedView) {
   if (allCount === 0) return '还没有商品，先去「建档」录一个';
@@ -53,6 +61,9 @@ Page({
   onShow() {
     if (!this.data.ready) return;
     this.syncOrderBar();
+    /* 节流：没别的页面改过数据、且距上次加载不到 60 秒，就不重拉全量 */
+    const changed = (app.globalData.changedAt || 0) > (this.lastLoadAt || 0);
+    if (!changed && this.lastLoadAt && Date.now() - this.lastLoadAt < RELOAD_GAP) return;
     this.loadInventory();
   },
 
@@ -199,24 +210,49 @@ Page({
       /* 共享模式：把本人名下的老照片（users/ 私有目录）迁到 shared/，否则别人看不到图。
          没有待迁移项时直接返回，不影响首屏 */
       try { await db.migrateLegacyPhotos(products); } catch (e) { /* 迁移失败不阻塞列表 */ }
-      let brandKey = this.data.brandKey;
-      /* 品牌统计只看当前视图（在售 / 已归档）下的商品 */
-      const brands = buildBrandStats(products.filter((p) => !!p.archived === this.data.archivedView));
-      /* 选中的品牌若已不存在（商品被删除或改了品牌），自动回到「全部商品」 */
-      if (brandKey !== ALL_BRANDS && !brands.some((s) => s.key === brandKey)) brandKey = ALL_BRANDS;
 
-      this.setData({
-        products,
-        brands,
-        brandKey,
-        loading: false,
-        archivedCount: products.filter((p) => !!p.archived).length,
-      });
+      this.setData({ products, loading: false });
+      this.lastLoadAt = Date.now();
+      this.recalcMeta();
       /* 缩略图由 render() 只签当前页可见的 20 张，失败就不显示图，不影响列表 */
       this.render();
     } catch (err) {
       this.setData({ loading: false, list: [], countText: '加载失败，请重试' });
     }
+  },
+
+  /* 品牌统计 / 归档数：只依赖 products 数组，全量与本地增量更新后都走这里 */
+  recalcMeta() {
+    const products = this.data.products || [];
+    /* 品牌统计只看当前视图（在售 / 已归档）下的商品 */
+    const brands = buildBrandStats(products.filter((p) => !!p.archived === this.data.archivedView));
+    let brandKey = this.data.brandKey;
+    /* 选中的品牌若已不存在（商品被删除或改了品牌），自动回到「全部商品」 */
+    if (brandKey !== ALL_BRANDS && !brands.some((s) => s.key === brandKey)) brandKey = ALL_BRANDS;
+    this.setData({
+      brands,
+      brandKey,
+      archivedCount: products.filter((p) => !!p.archived).length,
+    });
+  },
+
+  /* 本地改一行商品，不再重拉全量（省 644 行的查询）。
+     patch 为 null 表示删除该行。
+     返回 false 表示本地没找到该商品，调用方应回退到全量刷新。 */
+  applyLocalMutation(id, patch) {
+    const products = this.data.products || [];
+    const idx = products.findIndex((p) => String(p.id) === String(id));
+    if (idx < 0) return false;
+    if (patch === null) products.splice(idx, 1);
+    else products[idx] = Object.assign({}, products[idx], patch);
+
+    /* 先标记「云端变了」让别的页面（订单 / 报表）下次进入时刷新，
+       再更新本页时间戳，避免本页被自己的标记触发重复拉取 */
+    app.markChanged();
+    this.lastLoadAt = Date.now();
+    this.recalcMeta();
+    this.render();
+    return true;
   },
 
   render(resetPage) {
@@ -301,10 +337,40 @@ Page({
     this.fillThumbs(pageRows);
   },
 
-  /* 给当前页补签名地址：缓存在 this.photoMap，45 分钟后视为过期重签 */
+  /* 给当前页补签名地址：缓存在 this.photoMap，50 分钟内复用（签名本身 1 小时有效）。
+     缓存同时落本地 Storage，冷启动也能直接复用，省掉一次签名请求。 */
+  restorePhotoCache() {
+    if (this.photoMap) return;
+    try {
+      const saved = wx.getStorageSync(PHOTO_CACHE_KEY);
+      if (saved && saved.map && saved.at && Date.now() - saved.at < PHOTO_CACHE_TTL) {
+        this.photoMap = saved.map;
+        this.photoMapAt = saved.at;
+        return;
+      }
+    } catch (e) { /* 读不到就当没缓存 */ }
+    this.photoMap = {};
+    this.photoMapAt = 0;
+  },
+
+  savePhotoCache() {
+    try {
+      const keys = Object.keys(this.photoMap || {});
+      if (keys.length > PHOTO_CACHE_MAX) {
+        /* 只留最近签的一批，避免 Storage 越滚越大 */
+        const keep = keys.slice(-PHOTO_CACHE_MAX);
+        const trimmed = {};
+        keep.forEach((k) => { trimmed[k] = this.photoMap[k]; });
+        this.photoMap = trimmed;
+      }
+      wx.setStorageSync(PHOTO_CACHE_KEY, { map: this.photoMap, at: this.photoMapAt });
+    } catch (e) { /* 存不下只影响下次冷启动，本次照常显示 */ }
+  },
+
   async fillThumbs(rows) {
-    const stale = this.photoMapAt && Date.now() - this.photoMapAt > 45 * 60 * 1000;
-    if (!this.photoMap || stale) { this.photoMap = {}; this.photoMapAt = 0; }
+    this.restorePhotoCache();
+    const stale = this.photoMapAt && Date.now() - this.photoMapAt > PHOTO_CACHE_TTL;
+    if (stale) { this.photoMap = {}; this.photoMapAt = 0; }
     const map = this.photoMap;
     const need = [];
     rows.forEach((p) => {
@@ -315,6 +381,7 @@ Page({
     const fresh = await db.signPhotoUrls(need);
     Object.assign(map, fresh);
     this.photoMapAt = Date.now();
+    this.savePhotoCache();
 
     let changed = false;
     const next = (this.data.list || []).map((x) => {
@@ -437,7 +504,8 @@ Page({
       if (del.error) { this.setDialogError('删除失败：' + describeDbError(del.error)); return; }
       this.closeDialog();
       wx.showToast({ title: '商品已删除', icon: 'success' });
-      await this.loadInventory();
+      /* 本地移除这一行即可，不用重拉 644 款 */
+      if (!this.applyLocalMutation(p.id, null)) await this.loadInventory();
     } catch (err) {
       this.setDialogError((err && err.message) || '删除失败，请重试');
     }
@@ -462,7 +530,9 @@ Page({
           return;
         }
         wx.showToast({ title: '已归档', icon: 'success' });
-        await this.loadInventory();
+        if (!this.applyLocalMutation(p.id, { archived: true, updated_at: new Date().toISOString() })) {
+          await this.loadInventory();
+        }
       },
     });
   },
@@ -483,7 +553,9 @@ Page({
           return;
         }
         wx.showToast({ title: '已恢复上架', icon: 'success' });
-        await this.loadInventory();
+        if (!this.applyLocalMutation(p.id, { archived: false, updated_at: new Date().toISOString() })) {
+          await this.loadInventory();
+        }
       },
     });
   },
@@ -667,7 +739,8 @@ Page({
 
       this.closeDialog();
       wx.showToast({ title: isOut ? '出库成功' : '补货成功', icon: 'success' });
-      await this.loadInventory();
+      /* 库存和最近出入库时间已算好，本地更新这一行即可，不用重拉全表 */
+      if (!this.applyLocalMutation(p.id, patch)) await this.loadInventory();
     } catch (err) {
       this.setDialogError((err && err.message) || '操作失败，请重试');
     }
@@ -685,22 +758,24 @@ Page({
       return s === '' ? null : s;
     };
 
+    const patch = {
+      code: String(values.code || '').trim(),
+      name,
+      brand: trimOrNull(values.brand),
+      origin: trimOrNull(values.origin),
+      material: trimOrNull(values.material),
+      spec: trimOrNull(values.spec),
+      standard: trimOrNull(values.standard),
+      purchase_channel: trimOrNull(values.channel),
+      supplier_name: trimOrNull(values.supplier),
+      cost_price: String(values.cost || '').trim() === '' ? null : toNum(values.cost),
+      sale_price: String(values.sale || '').trim() === '' ? null : toNum(values.sale),
+      note: trimOrNull(values.note),
+      updated_at: new Date().toISOString(),
+    };
+
     try {
-      const upd = await db.updateProduct(p.id, {
-        code: String(values.code || '').trim(),
-        name,
-        brand: trimOrNull(values.brand),
-        origin: trimOrNull(values.origin),
-        material: trimOrNull(values.material),
-        spec: trimOrNull(values.spec),
-        standard: trimOrNull(values.standard),
-        purchase_channel: trimOrNull(values.channel),
-        supplier_name: trimOrNull(values.supplier),
-        cost_price: String(values.cost || '').trim() === '' ? null : toNum(values.cost),
-        sale_price: String(values.sale || '').trim() === '' ? null : toNum(values.sale),
-        note: trimOrNull(values.note),
-        updated_at: new Date().toISOString(),
-      });
+      const upd = await db.updateProduct(p.id, patch);
       if (upd.error) { this.setDialogError(describeDbError(upd.error)); return; }
       if (!Array.isArray(upd.data) || upd.data.length === 0) {
         this.setDialogError('未修改任何数据，请刷新后重试');
@@ -708,7 +783,7 @@ Page({
       }
       this.closeDialog();
       wx.showToast({ title: '已保存', icon: 'success' });
-      await this.loadInventory();
+      if (!this.applyLocalMutation(p.id, patch)) await this.loadInventory();
     } catch (err) {
       this.setDialogError((err && err.message) || '保存失败，请重试');
     }
