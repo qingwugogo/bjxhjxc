@@ -5,23 +5,12 @@ const { toNum, CHANNEL_OPTIONS, SUPPLIER_PRESETS } = require('../../utils/format
 const { describeDbError, describeStorageError, describeLlmError } = require('../../utils/errors');
 
 const RECOGNIZE_SYSTEM = [
-  '你是一个商品标签识别助手，专门从商品照片中提取结构化信息。',
-  '只输出一个 JSON 对象，不要输出任何解释文字、前后缀或 Markdown 代码块。',
-  'JSON 必须包含且仅包含这些字段：name, brand, origin, material, spec, standard。',
-  '每个字段的值都是字符串；照片中无法确认的项，值用空字符串。',
-  '绝对不要编造照片中不存在的信息。',
+  '从商品照片提取标签信息。只输出一个 JSON 对象，不要解释文字或 Markdown 代码块。',
+  '字段且仅含：name, brand, origin, material, spec, standard。',
+  '值均为字符串；看不清的填空字符串，不要编造。',
 ].join('');
 
-const RECOGNIZE_USER = [
-  '请识别这张商品照片，提取以下字段：',
-  '- name：产品名称',
-  '- brand：品牌',
-  '- origin：产地',
-  '- material：材质',
-  '- spec：规格',
-  '- standard：执行标准',
-  '仅返回 JSON。',
-].join('\n');
+const RECOGNIZE_USER = '提取 name/brand/origin/material/spec/standard 六个字段，仅返回 JSON。';
 
 /* 建档时的初始库存默认值：新到货多为单件样品，手动建档与识别建档统一按 1 件起 */
 const DEFAULT_INITIAL_STOCK = 1;
@@ -29,14 +18,27 @@ const DEFAULT_INITIAL_STOCK = 1;
 /* 售价默认值 = 进价 × 0.66（进价人民币、售价美元；用户手动改过售价就不再自动覆盖） */
 const SALE_DEFAULT_RATIO = 0.66;
 
-/* 识别用模型缓存：模型列表几乎不变，每次识别都拉一遍是纯浪费（每次 1 次请求）。
-   24 小时有效，识别失败时清掉重新拉。 */
-const MODEL_CACHE_KEY = 'sticker.visionModel';
+/* 识别模型：2026-11-24 实测 deepseek-v4.1-flash 约 2.0s，auto 约 4.8s。
+   按速度优先显式指定；候选缺失时按此顺序回退，不再默认命中 auto（推理型）。 */
+const VISION_MODEL_PRIORITY = [
+  'deepseek-v4.1-flash',
+  'deepseek-v4-flash',
+  'glm-5.3-flash',
+  'fast-model',
+  'space-bunny',
+];
+
+/* 识别模型缓存：v2 让旧缓存（auto）自动失效，无需用户手动清缓存 */
+const MODEL_CACHE_KEY = 'sticker.visionModel.v2';
 const MODEL_CACHE_TTL = 24 * 3600 * 1000;
 
-/* 识别专用图片长边：模型看标签够用，压小能显著减少图片 token（= 资源点） */
-const RECOGNIZE_MAX_WIDTH = 1024;
-const RECOGNIZE_QUALITY = 60;
+/* 建议候选：60 秒内不重复拉全量商品，1 小时内复用本地缓存 */
+const SUGGESTIONS_KEY = 'sticker.suggestions';
+const SUGGESTIONS_TTL = 60 * 60 * 1000;
+const SUGGESTIONS_THROTTLE = 60 * 1000;
+
+/* 识别响应只填 6 个短字段，400 token 足够，避免模型多吐解释文字拖慢 */
+const RECOGNIZE_MAX_TOKENS = 400;
 
 function trimOrNull(v) {
   const s = String(v == null ? '' : v).trim();
@@ -55,6 +57,8 @@ Page({
     recognizing: false,
     recognizeStatus: '',
     recognizeStatusType: '',
+    recognizeElapsed: 0,
+    canCancel: false,
     saving: false,
     saveStatus: '',
     saveStatusType: '',
@@ -80,6 +84,7 @@ Page({
   },
 
   onPullDownRefresh() {
+    this.refreshSuggestions(true);
     this.init().then(() => wx.stopPullDownRefresh());
   },
 
@@ -197,9 +202,14 @@ Page({
     const usable = models.filter((m) => m.disabled !== true && m.enabled !== false);
     const vision = usable.filter((m) => this.isVisionModel(m));
     if (vision.length === 0) return null;
-    const picked = vision.find((m) => m.isDefault === true)
-      || vision.find((m) => m.capabilities && m.capabilities.jsonMode === true)
-      || vision[0];
+
+    /* 速度优先：按实测优先级挑 flash 模型；目录改动导致候选缺失时逐级回退 */
+    let picked = null;
+    for (const id of VISION_MODEL_PRIORITY) {
+      picked = vision.find((m) => m.id === id);
+      if (picked) break;
+    }
+    if (!picked) picked = vision.find((m) => /flash|fast/i.test(String(m.id || ''))) || vision[0];
     this.activeModel = picked;
     try { wx.setStorageSync(MODEL_CACHE_KEY, { model: picked, at: Date.now() }); } catch (e) { /* 存不下就算了 */ }
     return picked;
@@ -229,46 +239,69 @@ Page({
     };
   },
 
-  /* 识别专用图片：在已压缩的照片上再压到长边 1024 / quality 60。
-     照片本身（this.data.photoPath）不动，上传保存的仍是 quality 80 的那张。
-     图小一半，图片 token 跟着降，识别准确度对标签文字来说够用。 */
+  /* 直接读 shrinkPhoto 已压好的照片（实测平均仅 13~16KB），不再二次压缩。
+     二次压缩要再等一次异步回调，省的 token 却几乎可以忽略，得不偿失。 */
   prepareImageDataUrl(path) {
-    return new Promise((resolve) => {
-      wx.compressImage({
-        src: path,
-        quality: RECOGNIZE_QUALITY,
-        compressedWidth: RECOGNIZE_MAX_WIDTH,
-        success: (res) => resolve((res && res.tempFilePath) || path),
-        fail: () => resolve(path),
-      });
-    }).then((src) => {
-      try {
-        return 'data:image/jpeg;base64,' + wx.getFileSystemManager().readFileSync(src, 'base64');
-      } catch (e) {
-        return '';
-      }
-    });
+    try {
+      return 'data:image/jpeg;base64,' + wx.getFileSystemManager().readFileSync(path, 'base64');
+    } catch (e) {
+      return '';
+    }
+  },
+
+  /* 识别期间可随时取消：流式循环里检查这个标记，break 会关闭流 */
+  cancelRecognize() {
+    if (!this.data.recognizing) return;
+    this.cancelRequested = true;
+    this.setData({ recognizeStatus: '正在取消…', recognizeStatusType: '' });
+  },
+
+  startRecognizeTimer() {
+    this.stopRecognizeTimer();
+    this.recognizeStartedAt = Date.now();
+    this.recognizeTimer = setInterval(() => {
+      if (this.cancelRequested) return;
+      const s = (Date.now() - this.recognizeStartedAt) / 1000;
+      this.setData({ recognizeElapsed: s, recognizeStatus: '模型识别中… ' + s.toFixed(1) + 's' });
+    }, 500);
+  },
+
+  stopRecognizeTimer() {
+    if (this.recognizeTimer) { clearInterval(this.recognizeTimer); this.recognizeTimer = null; }
   },
 
   async recognize() {
     if (!this.data.photoPath || this.data.recognizing) return;
+    this.cancelRequested = false;
     this.setData({
       recognizing: true,
-      recognizeStatus: '正在调用大模型识别，请稍候…',
+      canCancel: true,
+      recognizeElapsed: 0,
+      recognizeStatus: '正在准备照片…',
       recognizeStatusType: '',
+      saveStatus: '',
+      saveStatusType: '',
     });
+    const t0 = Date.now();
+    let preparedAt = 0, modelId = '', firstTokenAt = 0;
     try {
       const model = await this.pickVisionModel();
       if (!model) {
         this.setData({ recognizeStatus: '当前没有可用的识别模型，请稍后重试', recognizeStatusType: 'is-error' });
         return;
       }
-
-      const dataUrl = await this.prepareImageDataUrl(this.data.photoPath);
+      modelId = model.id;
+      const dataUrl = this.prepareImageDataUrl(this.data.photoPath);
       if (!dataUrl) {
         this.setData({ recognizeStatus: '照片读取失败，请重新选择', recognizeStatusType: 'is-error' });
         return;
       }
+      preparedAt = Date.now();
+
+      /* 商品编码与模型推理并行发起，省一次串行数据库往返 */
+      const codePromise = this.data.form.code
+        ? Promise.resolve(this.data.form.code)
+        : db.generateCode().catch(() => '');
 
       const params = {
         model: model.id,
@@ -283,21 +316,44 @@ Page({
           },
         ],
         stream: true,
+        max_tokens: RECOGNIZE_MAX_TOKENS,
       };
       /* 仅在模型声明支持 JSON 模式时才下发，避免不支持该参数的模型直接报错 */
       if (model.capabilities && model.capabilities.jsonMode === true) {
         params.response_format = { type: 'json_object' };
       }
 
+      this.startRecognizeTimer();
       let buffer = '';
       const stream = await cloud.llm.chat.completions.create(params);
       for await (const chunk of stream) {
+        if (this.cancelRequested) break;
         const delta = chunk.choices && chunk.choices[0] && chunk.choices[0].delta;
-        if (delta && delta.content) buffer += delta.content;
+        if (delta && delta.content) {
+          if (!firstTokenAt) {
+            firstTokenAt = Date.now();
+            this.stopRecognizeTimer();
+            this.setData({ recognizeStatus: '已收到结果，正在整理…' });
+          }
+          buffer += delta.content;
+        }
+      }
+      this.stopRecognizeTimer();
+
+      if (this.cancelRequested) {
+        this.setData({ recognizeStatus: '已取消识别', recognizeStatusType: '' });
+        return;
       }
 
       const data = this.parseModelJson(buffer);
-      const code = this.data.form.code || await db.generateCode();
+      const code = await codePromise;
+      /* 分段计时打点，下次变慢能一眼看出卡在哪一段 */
+      console.info('[create] recognize timing', {
+        model: modelId,
+        prepareMs: preparedAt - t0,
+        firstTokenMs: firstTokenAt ? firstTokenAt - t0 : 0,
+        totalMs: Date.now() - t0,
+      });
       this.setData({
         recognizeStatus: '识别完成，请核对下方信息',
         recognizeStatusType: 'is-ok',
@@ -317,7 +373,9 @@ Page({
       this.clearModelCache();
       this.setData({ recognizeStatus: describeLlmError(err), recognizeStatusType: 'is-error' });
     } finally {
-      this.setData({ recognizing: false });
+      this.stopRecognizeTimer();
+      this.cancelRequested = false;
+      this.setData({ recognizing: false, canCancel: false });
     }
   },
 
@@ -356,7 +414,31 @@ Page({
     this.setData({ 'form.channel': value });
   },
 
-  async refreshSuggestions() {
+  applySuggestions(v) {
+    this.setData({
+      suggestions: { brand: v.brand, supplier: v.supplierRange },
+      channelRange: v.channelRange,
+      /* 显示数组首项必须是「不填」，与 onChannelPick 的 idx0=清空 映射一致，
+         否则会差一位：点「拼多多」被清空、点「小红书」选中「拼多多」 */
+      channelLabels: ['不填'].concat(v.channelRange),
+      supplierRange: v.supplierRange,
+    });
+  },
+
+  async refreshSuggestions(force) {
+    const now = Date.now();
+    /* 60 秒内不重复拉（补上 P0 漏掉的建档页），下拉刷新可强制 */
+    if (!force && this.lastSuggestionsAt && now - this.lastSuggestionsAt < SUGGESTIONS_THROTTLE) return;
+    if (!force) {
+      try {
+        const cached = wx.getStorageSync(SUGGESTIONS_KEY);
+        if (cached && cached.at && now - cached.at < SUGGESTIONS_TTL && cached.value) {
+          this.applySuggestions(cached.value);
+          this.lastSuggestionsAt = now;
+          return;
+        }
+      } catch (e) { /* 读不到缓存就走网络 */ }
+    }
     try {
       const res = await cloud.database.from('products').select('brand, purchase_channel, supplier_name');
       if (res.error || !Array.isArray(res.data)) return;
@@ -372,18 +454,11 @@ Page({
       const supplierRange = SUPPLIER_PRESETS.concat(
         uniq('supplier_name').filter((v) => !SUPPLIER_PRESETS.includes(v))
       );
+      const value = { brand: uniq('brand'), channelRange, supplierRange };
 
-      this.setData({
-        suggestions: {
-          brand: uniq('brand'),
-          supplier: supplierRange,
-        },
-        channelRange,
-        /* 显示数组首项必须是「不填」，与 onChannelPick 的 idx0=清空 映射一致，
-           否则会差一位：点「拼多多」被清空、点「小红书」选中「拼多多」 */
-        channelLabels: ['不填'].concat(channelRange),
-        supplierRange,
-      });
+      this.applySuggestions(value);
+      this.lastSuggestionsAt = Date.now();
+      try { wx.setStorageSync(SUGGESTIONS_KEY, { at: Date.now(), value }); } catch (e) { /* 存不下就算了 */ }
     } catch (e) { /* 候选失败不影响建档 */ }
   },
 

@@ -33,14 +33,10 @@
       </view>
 
       <view class="btn-row">
-        <button
-          class="btn btn-primary"
-          bindtap="recognize"
-          disabled="{{!hasPhoto || recognizing}}"
-          loading="{{recognizing}}"
-        >开始 AI 识别（可选）</button>
-        <button class="btn btn-ghost" bindtap="clearPhoto" wx:if="{{hasPhoto}}">清除照片</button>
-        <button class="btn btn-ghost" bindtap="previewPhoto" wx:if="{{hasPhoto}}">看大图</button>
+        <button wx:if="{{recognizing}}" class="btn btn-ghost" bindtap="cancelRecognize">取消识别</button>
+        <button wx:else class="btn btn-primary" bindtap="recognize" disabled="{{!hasPhoto}}">开始 AI 识别（可选）</button>
+        <button class="btn btn-ghost" bindtap="clearPhoto" wx:if="{{hasPhoto && !recognizing}}">清除照片</button>
+        <button class="btn btn-ghost" bindtap="previewPhoto" wx:if="{{hasPhoto && !recognizing}}">看大图</button>
       </view>
 
       <view class="status {{recognizeStatusType}}" wx:if="{{recognizeStatus}}">{{recognizeStatus}}</view>
